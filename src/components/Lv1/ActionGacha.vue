@@ -1,33 +1,44 @@
 <template>
   <div class="action-gacha">
-    <h2 class="title">🎲 行動ガチャ</h2>
+    <h2 class="title">🎁 行動ガチャ</h2>
     <p class="description">今日のおすすめ行動をガチャで決めよう！</p>
     
     <div class="gacha-container">
-      <!-- ルーレット表示エリア -->
-      <div class="roulette-area">
-        <svg
-          class="roulette-wheel"
-          :class="{ 'spinning': isSpinning }"
-          :style="{ transform: `rotate(${rotation}deg)` }"
-          width="300"
-          height="300"
-          viewBox="0 0 300 300"
+      <!-- 初期状態：ガチャボタンのみ -->
+      <div v-if="!showTreasures && !selectedAction" class="initial-state">
+        <button
+          class="gacha-button"
+          @click="startGacha"
+          :disabled="isProcessing"
         >
-          <g v-for="(color, index) in rouletteColors" :key="index">
-            <path
-              :d="getSlicePath(index, rouletteColors.length)"
-              :fill="color"
-              stroke="white"
-              stroke-width="3"
-            />
-          </g>
-        </svg>
-        <div class="roulette-pointer"></div>
+          {{ isProcessing ? 'ガチャ準備中...' : 'ガチャを回す！' }}
+        </button>
+      </div>
+
+      <!-- 宝箱選択画面 -->
+      <div v-if="showTreasures && !selectedAction" class="treasure-selection">
+        <p class="instruction">宝箱を1つ選んでください！</p>
+        <div class="treasures-container">
+          <div
+            v-for="(treasure, index) in treasures"
+            :key="index"
+            class="treasure-box"
+            :class="{ 
+              'selected': treasure.isSelected,
+              'opening': treasure.isOpening,
+              'glowing': treasure.isGlowing
+            }"
+            @click="selectTreasure(index)"
+          >
+            <div class="treasure-lid"></div>
+            <div class="treasure-body"></div>
+            <div class="treasure-glow"></div>
+          </div>
+        </div>
       </div>
 
       <!-- 結果表示エリア -->
-      <div class="result-area" v-if="selectedAction">
+      <div v-if="selectedAction" class="result-area">
         <div class="result-card" :class="{ 'show': showResult }">
           <div class="category-badge" :style="{ backgroundColor: getCategoryColor(selectedAction.category) }">
             {{ selectedAction.category }}
@@ -36,54 +47,33 @@
           <p class="action-description">{{ selectedAction.description }}</p>
           <div class="action-duration">⏱️ {{ selectedAction.duration }}</div>
         </div>
+        
+        <!-- もう一度ボタン -->
+        <button class="retry-button" @click="resetGacha">
+          もう一度ガチャを回す
+        </button>
       </div>
-
-      <!-- ガチャボタン -->
-      <button
-        class="gacha-button"
-        @click="spinGacha"
-        :disabled="isSpinning"
-        :class="{ 'spinning': isSpinning }"
-      >
-        {{ isSpinning ? 'ガチャ中...' : 'ガチャを回す！' }}
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 
 // リアクティブデータ
-const isSpinning = ref(false)
-const rotation = ref(0)
+const isProcessing = ref(false)
+const showTreasures = ref(false)
 const selectedAction = ref(null)
 const showResult = ref(false)
 
-// ルーレットの色配列（カテゴリ色を繰り返し配置）
-const rouletteColors = [
-  '#FF6B6B', // 運動
-  '#4ECDC4', // リラックス
-  '#45B7D1', // 創作活動
-  '#96CEB4', // 社交
-  '#FFEAA7', // セルフケア
-  '#FF6B6B', // 運動
-  '#4ECDC4', // リラックス
-  '#45B7D1', // 創作活動
-  '#96CEB4', // 社交
-  '#FFEAA7', // セルフケア
-  '#FF6B6B', // 運動
-  '#4ECDC4'  // リラックス
-]
-
-// ルーレット色とカテゴリのマッピング
-const colorToCategoryMap = {
-  '#FF6B6B': '運動',
-  '#4ECDC4': 'リラックス',
-  '#45B7D1': '創作活動',
-  '#96CEB4': '社交',
-  '#FFEAA7': 'セルフケア'
-}
+// 宝箱データ
+const treasures = reactive([
+  { isSelected: false, isOpening: false, isGlowing: false },
+  { isSelected: false, isOpening: false, isGlowing: false },
+  { isSelected: false, isOpening: false, isGlowing: false },
+  { isSelected: false, isOpening: false, isGlowing: false },
+  { isSelected: false, isOpening: false, isGlowing: false }
+])
 
 // 行動データベース
 const actionDatabase = [
@@ -132,72 +122,54 @@ const getCategoryColor = (category) => {
   return categoryColors[category] || '#DDD'
 }
 
-// SVGピザスライスのパスを生成
-const getSlicePath = (index, total) => {
-  const centerX = 150
-  const centerY = 150
-  const radius = 140
-  const anglePerSlice = (2 * Math.PI) / total
-  const startAngle = index * anglePerSlice
-  const endAngle = (index + 1) * anglePerSlice
+// ガチャ開始
+const startGacha = () => {
+  isProcessing.value = true
   
-  const x1 = centerX + radius * Math.cos(startAngle)
-  const y1 = centerY + radius * Math.sin(startAngle)
-  const x2 = centerX + radius * Math.cos(endAngle)
-  const y2 = centerY + radius * Math.sin(endAngle)
-  
-  const largeArcFlag = anglePerSlice > Math.PI ? 1 : 0
-  
-  return `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`
+  // 0.3秒後に宝箱を表示
+  setTimeout(() => {
+    isProcessing.value = false
+    showTreasures.value = true
+  }, 300)
 }
 
-// ガチャを回す
-const spinGacha = () => {
-  if (isSpinning.value) return
+// 宝箱選択
+const selectTreasure = (index) => {
+  // 既に選択済みの場合は無視
+  if (treasures.some(t => t.isSelected)) return
   
-  isSpinning.value = true
-  showResult.value = false
-  selectedAction.value = null
+  // 選択された宝箱を光らせる
+  treasures[index].isSelected = true
+  treasures[index].isGlowing = true
   
-  // 先に結果を決定する
-  const randomActionIndex = Math.floor(Math.random() * actionDatabase.length)
-  const targetAction = actionDatabase[randomActionIndex]
-  const targetCategory = targetAction.category
-  const targetColor = getCategoryColor(targetCategory)
-  
-  // 目標の色に対応するスライスのインデックスを見つける
-  const targetSliceIndices = []
-  rouletteColors.forEach((color, index) => {
-    if (color === targetColor) {
-      targetSliceIndices.push(index)
-    }
-  })
-  
-  // ランダムに目標スライスを選択
-  const targetSliceIndex = targetSliceIndices[Math.floor(Math.random() * targetSliceIndices.length)]
-  
-  // 目標スライスの中央角度を計算
-  const sliceAngle = 360 / rouletteColors.length
-  const targetAngle = targetSliceIndex * sliceAngle + sliceAngle / 2
-  
-  // ランダムな回転数を設定（3-5回転 + 目標角度）
-  const spins = 3 + Math.random() * 2
-  const totalRotation = spins * 360 + targetAngle
-  
-  rotation.value += totalRotation
-  
-  // アニメーション終了後の処理
+  // 0.8秒後に開く演出（光る演出を少し長く）
   setTimeout(() => {
-    // 結果を設定
-    selectedAction.value = targetAction
+    treasures[index].isOpening = true
     
-    isSpinning.value = false
+    // ランダムに行動を選択
+    const randomIndex = Math.floor(Math.random() * actionDatabase.length)
+    selectedAction.value = actionDatabase[randomIndex]
     
-    // 結果表示のアニメーション
+    // 0.5秒後に結果表示
     setTimeout(() => {
       showResult.value = true
-    }, 300)
-  }, 3000) // 3秒間のスピンアニメーション
+    }, 500)
+  }, 800)
+}
+
+// ガチャリセット
+const resetGacha = () => {
+  showTreasures.value = false
+  selectedAction.value = null
+  showResult.value = false
+  isProcessing.value = false
+  
+  // 宝箱の状態をリセット
+  treasures.forEach(treasure => {
+    treasure.isSelected = false
+    treasure.isOpening = false
+    treasure.isGlowing = false
+  })
 }
 </script>
 
@@ -209,6 +181,7 @@ const spinGacha = () => {
   color: white;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
 }
 
 .title {
@@ -229,106 +202,25 @@ const spinGacha = () => {
   gap: 2rem;
 }
 
-.roulette-area {
-  position: relative;
-  width: 300px;
-  height: 300px;
-}
-
-.roulette-wheel {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  transition: transform 3s cubic-bezier(0.23, 1, 0.32, 1);
-  border: 4px solid white;
-  background: white;
-}
-
-.roulette-wheel.spinning {
-  transition: transform 3s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-
-.roulette-pointer {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 15px solid transparent;
-  border-right: 15px solid transparent;
-  border-top: 20px solid #FFD700;
-  z-index: 10;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.result-area {
-  min-height: 200px;
+.initial-state {
   display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-.result-card {
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 300px;
-  transform: scale(0.8);
-  opacity: 0;
-  transition: all 0.5s ease;
-}
-
-.result-card.show {
-  transform: scale(1);
-  opacity: 1;
-}
-
-.category-badge {
-  display: inline-block;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 1rem;
-}
-
-.action-name {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
-  color: #333;
-}
-
-.action-description {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-  color: #666;
-}
-
-.action-duration {
-  font-size: 0.8rem;
-  color: #888;
-  font-weight: bold;
+  align-items: center;
+  min-height: 200px;
 }
 
 .gacha-button {
   background: linear-gradient(45deg, #FFD700, #FFA500);
   color: #333;
   border: none;
-  padding: 1rem 2rem;
+  padding: 1.5rem 3rem;
   border-radius: 50px;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-  min-width: 200px;
+  min-width: 250px;
 }
 
 .gacha-button:hover:not(:disabled) {
@@ -342,14 +234,161 @@ const spinGacha = () => {
   transform: none;
 }
 
-.gacha-button.spinning {
-  animation: pulse 1s infinite;
+.treasure-selection {
+  text-align: center;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+.instruction {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #FFD700;
+  font-weight: bold;
+}
+
+.treasures-container {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.treasure-box {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.treasure-box:hover {
+  transform: translateY(-5px);
+}
+
+.treasure-lid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  border-radius: 8px 8px 4px 4px;
+  border: 2px solid #654321;
+  transition: all 0.5s ease;
+}
+
+.treasure-body {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  width: 100%;
+  height: 55px;
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  border-radius: 4px 4px 8px 8px;
+  border: 2px solid #654321;
+}
+
+.treasure-glow {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+.treasure-box.glowing .treasure-glow {
+  opacity: 1;
+  animation: glow 1s infinite alternate;
+}
+
+.treasure-box.opening .treasure-lid {
+  transform: rotateX(-120deg);
+  transform-origin: bottom;
+}
+
+.treasure-box.opening .treasure-body {
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+  100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
+}
+
+.result-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.result-card {
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 350px;
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+.result-card.show {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.action-name {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.action-description {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  color: #666;
+}
+
+.action-duration {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: bold;
+}
+
+.retry-button {
+  background: linear-gradient(45deg, #4ECDC4, #44A08D);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
 }
 
 /* レスポンシブ対応 */
@@ -358,18 +397,32 @@ const spinGacha = () => {
     padding: 1.5rem;
   }
   
-  .roulette-area {
-    width: 250px;
-    height: 250px;
+  .treasures-container {
+    gap: 1rem;
   }
   
-  .roulette-wheel {
-    width: 250px;
-    height: 250px;
+  .treasure-box {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .treasure-lid {
+    height: 22px;
+  }
+  
+  .treasure-body {
+    top: 18px;
+    height: 42px;
   }
   
   .title {
     font-size: 1.5rem;
+  }
+  
+  .gacha-button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    min-width: 200px;
   }
 }
 </style>
