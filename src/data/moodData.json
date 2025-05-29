@@ -1,0 +1,69 @@
+{
+  "moodRecords": [
+    {
+      "date": "2025-05-01",
+      "moodLevel": 2,
+      "gachaResult": "コーヒーを飲む"
+    },
+    {
+      "date": "2025-05-02",
+      "moodLevel": 3,
+      "gachaResult": "散歩をする"
+    },
+    {
+      "date": "2025-05-03",
+      "moodLevel": 1,
+      "gachaResult": "音楽を聴く"
+    },
+    {
+      "date": "2025-05-05",
+      "moodLevel": 3,
+      "gachaResult": "友達と話す"
+    },
+    {
+      "date": "2025-05-07",
+      "moodLevel": 2,
+      "gachaResult": "本を読む"
+    },
+    {
+      "date": "2025-05-10",
+      "moodLevel": 1,
+      "gachaResult": "深呼吸をする"
+    },
+    {
+      "date": "2025-05-12",
+      "moodLevel": 3,
+      "gachaResult": "ストレッチをする"
+    },
+    {
+      "date": "2025-05-15",
+      "moodLevel": 2,
+      "gachaResult": "お茶を飲む"
+    },
+    {
+      "date": "2025-05-18",
+      "moodLevel": 3,
+      "gachaResult": "映画を見る"
+    },
+    {
+      "date": "2025-05-20",
+      "moodLevel": 1,
+      "gachaResult": "瞑想をする"
+    },
+    {
+      "date": "2025-05-22",
+      "moodLevel": 2,
+      "gachaResult": "料理をする"
+    },
+    {
+      "date": "2025-05-25",
+      "moodLevel": 3,
+      "gachaResult": "ゲームをする"
+    },
+    {
+      "date": "2025-05-28",
+      "moodLevel": 2,
+      "gachaResult": "掃除をする"
+    }
+  ]
+}
