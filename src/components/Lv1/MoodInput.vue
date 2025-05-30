@@ -3,7 +3,7 @@
     class="form-container"
     :style="{ backgroundColor: showConfirm ? selectedColor : '#fff' }"
   >
-    <div v-if="!showConfirm">
+    <div v-if="!showConfirm && !isCompleted">
       <h1 class="title">今日の気分は？</h1>
       <div class="button-container">
         <button
@@ -21,6 +21,15 @@
         </button>
       </div>
       <p class="subtext">一つ選ぼう！！</p>
+    </div>
+
+    <div v-else-if="isCompleted" class="completed-box">
+      <h1 class="title">記録完了！</h1>
+      <div class="completed-mood" :style="{ backgroundColor: completedMood.color }">
+        {{ completedMood.label }}
+      </div>
+      <p class="completed-text">今日の気分を記録しました</p>
+      <button class="reset-button" @click="resetSelection">もう一度選ぶ</button>
     </div>
 
     <div v-else class="confirm-box">
@@ -55,6 +64,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { supabase } from '@/lib/supabase'
 const emit = defineEmits(['mood-selected'])
 
 const moodOptions = ref([
@@ -68,6 +78,8 @@ const selectedLabel = ref('')
 const selectedColor = ref('')
 const selectedEmoji = ref('')
 const showConfirm = ref(false)
+const isCompleted = ref(false)
+const completedMood = ref(null)
 
 function selectMood(option) {
   selectedMood.value = option.value
@@ -114,6 +126,67 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
+async function confirmMood() {
+  try {
+    // mood → mood_level のマップ
+    const moodMap = {
+      'しんどい': 0,
+      'まあまあ': 1,
+      'いけるかも': 2,
+    }
+
+    // ユーザー情報を取得
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.warn('ユーザーがログインしていません。ローカルでのみ記録します。', userError)
+    } else {
+      // Supabaseにinsert（ログインしている場合のみ）
+      const { error } = await supabase
+        .from('moods')
+        .insert([{
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          mood: selectedLabel.value,
+          mood_level: moodMap[selectedLabel.value]
+        }])
+
+      if (error) {
+        console.error('保存に失敗:', error)
+      } else {
+        console.log('気分を記録しました！')
+      }
+    }
+
+    // 完了状態を設定
+    completedMood.value = {
+      label: selectedLabel.value,
+      value: selectedMood.value,
+      color: selectedColor.value
+    }
+
+    // 既存のemitもそのまま残す（ログイン状態に関係なく実行）
+    emit('mood-selected', {
+      value: selectedMood.value,
+      label: selectedLabel.value,
+      color: selectedColor.value,
+      date: new Date().toISOString(),
+    })
+
+    showConfirm.value = false
+    isCompleted.value = true
+  } catch (error) {
+    console.error('予期しないエラー:', error)
+    showConfirm.value = false
+  }
+}
+
+function resetSelection() {
+  isCompleted.value = false
+  selectedMood.value = null
+  selectedLabel.value = ''
+  selectedColor.value = ''
+  completedMood.value = null
+}
 </script>
 
 <style scoped>
@@ -357,5 +430,44 @@ onUnmounted(() => {
     width: 100%;
     max-width: 200px;
   }
+}
+
+.completed-box {
+  margin-top: 5vh;
+  text-align: center;
+}
+
+.completed-mood {
+  display: inline-block;
+  padding: 1.5rem 3rem;
+  margin: 2rem 0;
+  border: 2px solid #000;
+  border-radius: 12px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.completed-text {
+  font-size: 1.4rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.reset-button {
+  background-color: #28a745;
+  border: 1px solid #000;
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: bold;
+  transition: background 0.2s ease;
+}
+
+.reset-button:hover {
+  background-color: #218838;
 }
 </style>

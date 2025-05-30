@@ -1,28 +1,51 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase'
 import Lv1 from './components/Lv1/index.vue'
 import Login from './components/Login.vue'
 
 const isLoggedIn = ref(false)
 const currentUser = ref(null)
+const userUID = ref(null)
 
 const handleLogin = (credentials) => {
-  // 簡単なログイン処理（実際のアプリケーションでは認証APIを呼び出します）
   console.log('ログイン試行:', credentials)
   
-  // デモ用：任意のID/パスワードでログイン成功とする
-  if (credentials.userId && credentials.password) {
+  if (credentials.user) {
     isLoggedIn.value = true
     currentUser.value = credentials.userId
-    console.log('ログイン成功:', credentials.userId)
+    userUID.value = credentials.user.id
+    console.log('ログイン成功 - UID:', credentials.user.id)
+    console.log('ログイン成功 - Email:', credentials.userId)
   }
 }
 
-const handleLogout = () => {
-  isLoggedIn.value = false
-  currentUser.value = null
-  console.log('ログアウトしました')
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      console.error('ログアウトエラー:', error)
+    } else {
+      isLoggedIn.value = false
+      currentUser.value = null
+      userUID.value = null
+      console.log('ログアウトしました')
+    }
+  } catch (error) {
+    console.error('予期しないログアウトエラー:', error)
+  }
 }
+
+// ページ読み込み時に認証状態をチェック
+onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    isLoggedIn.value = true
+    currentUser.value = user.email
+    userUID.value = user.id
+    console.log('既存セッション検出 - UID:', user.id)
+  }
+})
 </script>
 
 <template>
@@ -32,7 +55,10 @@ const handleLogout = () => {
     <div v-else>
       <!-- ログアウトボタンを追加 -->
       <div class="header">
-        <span>ようこそ、{{ currentUser }}さん</span>
+        <div class="user-info">
+          <span>ようこそ、{{ currentUser }}さん</span>
+          <span class="user-uid">UID: {{ userUID }}</span>
+        </div>
         <button @click="handleLogout" class="logout-button">ログアウト</button>
       </div>
       <Lv1 />
@@ -48,6 +74,18 @@ const handleLogout = () => {
   padding: 1rem 2rem;
   background-color: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-uid {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-family: monospace;
 }
 
 .logout-button {
