@@ -97,17 +97,6 @@ function goBack() {
   selectedEmoji.value = ''
 }
 
-function confirmMood() {
-  emit('mood-selected', {
-    value: selectedMood.value,
-    label: selectedLabel.value,
-    color: selectedColor.value,
-    emoji: selectedEmoji.value,
-    date: new Date().toISOString(),
-  })
-  // 記録後にリセット
-  goBack()
-}
 
 // ESCキーでの戻る機能
 const handleKeydown = (event) => {
