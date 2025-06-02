@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
-import Lv1 from './components/Lv1/index.vue'
+import Lv1 from './components/Lv1/MainView.vue'
 import Login from './components/Login.vue'
 
 const isLoggedIn = ref(false)
