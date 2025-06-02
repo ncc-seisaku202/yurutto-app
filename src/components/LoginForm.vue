@@ -20,7 +20,7 @@
             id="password"
             v-model="password"
             type="password"
-            placeholder="パスワードを入力してくaださい"
+            placeholder="パスワードを入力してください"
             required
             :disabled="isLoading"
           />
