@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import Lv1 from './components/Lv1/MainView.vue'
-import Login from './components/Login.vue'
+import LoginForm from './components/LoginForm.vue'
 
 const isLoggedIn = ref(false)
 const currentUser = ref(null)
@@ -51,7 +51,7 @@ onMounted(async () => {
 <template>
   <div>
     <!-- ログイン状態に応じて表示を切り替え -->
-    <Login v-if="!isLoggedIn" @login="handleLogin" />
+    <LoginForm v-if="!isLoggedIn" @login="handleLogin" />
     <div v-else>
       <!-- ログアウトボタンを追加 -->
       <div class="header">
