@@ -64,6 +64,56 @@
       "date": "2025-05-28",
       "moodLevel": 2,
       "gachaResult": "掃除をする"
+    },
+    {
+      "date": "2025-06-01",
+      "moodLevel": 3,
+      "gachaResult": "朝の散歩"
+    },
+    {
+      "date": "2025-06-02",
+      "moodLevel": 2,
+      "gachaResult": "読書タイム"
+    },
+    {
+      "date": "2025-06-04",
+      "moodLevel": 1,
+      "gachaResult": "温かいお風呂"
+    },
+    {
+      "date": "2025-06-05",
+      "moodLevel": 3,
+      "gachaResult": "好きな音楽を聴く"
+    },
+    {
+      "date": "2025-06-07",
+      "moodLevel": 2,
+      "gachaResult": "植物の世話"
+    },
+    {
+      "date": "2025-06-09",
+      "moodLevel": 3,
+      "gachaResult": "友人とカフェ"
+    },
+    {
+      "date": "2025-06-11",
+      "moodLevel": 1,
+      "gachaResult": "ヨガをする"
+    },
+    {
+      "date": "2025-06-13",
+      "moodLevel": 2,
+      "gachaResult": "お気に入りの映画"
+    },
+    {
+      "date": "2025-06-15",
+      "moodLevel": 3,
+      "gachaResult": "新しいレシピに挑戦"
+    },
+    {
+      "date": "2025-06-17",
+      "moodLevel": 2,
+      "gachaResult": "アロマキャンドル"
     }
   ]
 }
