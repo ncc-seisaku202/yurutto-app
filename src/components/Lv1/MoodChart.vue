@@ -145,7 +145,10 @@ const updateChart = () => {
     const newData = prepareChartData()
     chartInstance.data.labels = newData.labels
     chartInstance.data.datasets[0].data = newData.datasets[0].data
-    chartInstance.update('active')
+    // rawDataも更新
+    chartInstance.rawData = newData.rawData
+    // パフォーマンス向上のため'none'モードで更新
+    chartInstance.update('none')
   }
 }
 
@@ -164,6 +167,23 @@ const initChart = () => {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 300, // アニメーション時間を短縮
+        easing: 'easeOutQuart'
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      elements: {
+        point: {
+          hoverRadius: 8,
+          hitRadius: 15 // ホバー検出範囲を拡大
+        },
+        line: {
+          tension: 0.5
+        }
+      },
       layout: {
         padding: {
           left: 10,
@@ -183,21 +203,31 @@ const initChart = () => {
           callbacks: {
             title: function(context) {
               const index = context[0].dataIndex
-              const date = data.rawData[index].date
-              const dateObj = new Date(date)
-              return `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
+              const chart = context[0].chart
+              const rawData = chart.rawData
+              if (rawData && rawData[index]) {
+                const date = rawData[index].date
+                const dateObj = new Date(date)
+                return `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
+              }
+              return ''
             },
             label: function(context) {
               const moodLevel = context.parsed.y
               const index = context.dataIndex
-              const hasData = data.rawData[index].hasData
+              const chart = context.chart
+              const rawData = chart.rawData
               const label = moodLabels[moodLevel]
               
-              if (hasData) {
-                return `気分: ${label} 🌊`
-              } else {
-                return `気分: ${label} (記録なし) 💭`
+              if (rawData && rawData[index]) {
+                const hasData = rawData[index].hasData
+                if (hasData) {
+                  return `気分: ${label} 🌊`
+                } else {
+                  return `気分: ${label} (記録なし) 💭`
+                }
               }
+              return `気分: ${label} 🌊`
             }
           },
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -256,13 +286,12 @@ const initChart = () => {
             display: false
           }
         }
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index'
       }
     }
   })
+  
+  // rawDataを保存してツールチップで使用
+  chartInstance.rawData = data.rawData
 }
 
 // コンポーネントがマウントされた時にチャートを初期化
