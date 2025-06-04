@@ -2,7 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import Lv1 from './components/Lv1/MainView.vue'
+import Lv2 from './components/Lv2/MainView.vue'
 import LoginForm from './components/LoginForm.vue'
+
+const currentLevel = ref('Lv2') // デフォルトをLv2に設定
 
 const isLoggedIn = ref(false)
 const currentUser = ref(null)
@@ -53,15 +56,35 @@ onMounted(async () => {
     <!-- ログイン状態に応じて表示を切り替え -->
     <LoginForm v-if="!isLoggedIn" @login="handleLogin" />
     <div v-else>
-      <!-- ログアウトボタンを追加 -->
+      <!-- ヘッダー部分 -->
       <div class="header">
         <div class="user-info">
           <span>ようこそ、{{ currentUser }}さん</span>
           <span class="user-uid">UID: {{ userUID }}</span>
         </div>
-        <button @click="handleLogout" class="logout-button">ログアウト</button>
+        <div class="header-controls">
+          <!-- レベル切り替えボタン -->
+          <div class="level-selector">
+            <button
+              :class="['level-btn', { active: currentLevel === 'Lv1' }]"
+              @click="currentLevel = 'Lv1'"
+            >
+              Lv1
+            </button>
+            <button
+              :class="['level-btn', { active: currentLevel === 'Lv2' }]"
+              @click="currentLevel = 'Lv2'"
+            >
+              Lv2
+            </button>
+          </div>
+          <button @click="handleLogout" class="logout-button">ログアウト</button>
+        </div>
       </div>
-      <Lv1 />
+      
+      <!-- レベルに応じてコンポーネントを切り替え -->
+      <Lv1 v-if="currentLevel === 'Lv1'" />
+      <Lv2 v-if="currentLevel === 'Lv2'" />
     </div>
   </div>
 </template>
@@ -74,6 +97,44 @@ onMounted(async () => {
   padding: 1rem 2rem;
   background-color: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.level-selector {
+  display: flex;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.level-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #fff;
+  color: #6c757d;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-right: 1px solid #e9ecef;
+}
+
+.level-btn:last-child {
+  border-right: none;
+}
+
+.level-btn:hover {
+  background: #f8f9fa;
+}
+
+.level-btn.active {
+  background: #007bff;
+  color: white;
 }
 
 .user-info {
