@@ -139,8 +139,11 @@ const formatTime = (timestamp) => {
 
 // 選択された日付をフォーマット
 const formatSelectedDate = (dateString) => {
-  const date = new Date(dateString)
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  // タイムゾーンの影響を避けるため、文字列から直接パース
+  const parts = dateString.split('-')
+  const month = parseInt(parts[1], 10)
+  const day = parseInt(parts[2], 10)
+  return `${month}月${day}日`
 }
 
 // カレンダーの日付データを生成
@@ -165,13 +168,18 @@ const calendarDates = computed(() => {
   const today = new Date()
   
   while (currentDateObj <= endDate) {
-    const dateString = currentDateObj.toISOString().split('T')[0]
+    // タイムゾーンの影響を避けるため、ローカル日付から文字列を生成
+    const year = currentDateObj.getFullYear()
+    const month_num = currentDateObj.getMonth() + 1
+    const day_num = currentDateObj.getDate()
+    const dateString = `${year}-${month_num.toString().padStart(2, '0')}-${day_num.toString().padStart(2, '0')}`
+    
     const moodRecord = moodDataLv2.moodRecords.find(record => record.date === dateString)
     
     dates.push({
       key: dateString,
       dateString,
-      day: currentDateObj.getDate(),
+      day: day_num,
       isCurrentMonth: currentDateObj.getMonth() === month,
       isToday: currentDateObj.toDateString() === today.toDateString(),
       hasMood: !!moodRecord,
