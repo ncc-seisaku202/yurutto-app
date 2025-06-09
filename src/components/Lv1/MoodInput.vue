@@ -65,6 +65,7 @@
 <script setup>
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { moodMap } from '@/constants/moods'
 const emit = defineEmits(['mood-selected'])
 
 const moodOptions = ref([
@@ -117,13 +118,6 @@ onUnmounted(() => {
 })
 async function confirmMood() {
   try {
-    // mood → mood_level のマップ
-    const moodMap = {
-      'しんどい': 0,
-      'まあまあ': 1,
-      'いけるかも': 2,
-    }
-
     // ユーザー情報を取得
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {

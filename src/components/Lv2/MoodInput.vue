@@ -65,16 +65,8 @@
 <script setup>
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { moodOptions, moodMap } from '@/constants/moods'
 const emit = defineEmits(['mood-selected'])
-
-// 5段階の気分オプション
-const moodOptions = ref([
-  { label: 'とてもしんどい', emoji: '😰', color: '#ff1744', value: 'very-tired', level: 1 },
-  { label: 'しんどい', emoji: '😔', color: '#ff4dd2', value: 'tired', level: 2 },
-  { label: 'まあまあ', emoji: '😐', color: '#00ffff', value: 'so-so', level: 3 },
-  { label: 'いけるかも', emoji: '😊', color: '#ffb347', value: 'maybe-ok', level: 4 },
-  { label: 'とても良い', emoji: '😄', color: '#4caf50', value: 'very-good', level: 5 },
-])
 
 const selectedMood = ref(null)
 const selectedLabel = ref('')
@@ -135,7 +127,7 @@ async function confirmMood() {
           id: crypto.randomUUID(),
           user_id: user.id,
           mood: selectedLabel.value,
-          mood_level: selectedLevel.value // 1-5の範囲
+          mood_level: moodMap[selectedLabel.value],
         }])
 
       if (error) {
