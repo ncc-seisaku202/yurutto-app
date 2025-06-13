@@ -25,11 +25,6 @@ onMounted(async () => {
   }
 
   const user = session.user
-  console.log('セッション確認済み - UID:', user.id)
-  console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '設定済み' : '未設定')
-  console.log('Supabase Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '設定済み' : '未設定')
-
-  console.log('moodsテーブルからデータ取得を開始...')
   
   try {
     const { data, error } = await supabase

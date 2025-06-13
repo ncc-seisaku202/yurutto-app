@@ -36,7 +36,7 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import moodData from '@/data/moodData.json'
+import { supabase } from '@/lib/supabase'
 
 // Chart.jsの必要なコンポーネントを登録
 Chart.register(
@@ -66,7 +66,7 @@ const periods = ref([
 const moodLabels = {
   1: 'しんどい',
   2: 'まあまあ',
-  3: 'いけるかも'
+  3: 'いけるかも',
 }
 
 // 指定期間の日付を生成
@@ -94,6 +94,47 @@ const getGentleMessage = () => {
   return messages[Math.floor(Math.random() * messages.length)]
 }
 
+const moodRecords = ref([])
+const moodRecordsRaw = ref([])
+
+onMounted(async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    console.error('ユーザー情報取得失敗:', userError)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('moods')
+    .select('created_at, mood_level')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('気分データ取得失敗:', error)
+    return
+  }
+
+  moodRecords.value = data.map(entry => ({
+    date: entry.created_at.split('T')[0],
+    moodLevel: entry.mood_level
+  }))
+
+  moodRecordsRaw.value = data.map(entry => ({
+    date: entry.created_at.split('T')[0],
+    moodLevel: entry.mood_level
+  }))
+
+  initChart()
+})
+
+// コンポーネントがアンマウントされる時にチャートを破棄
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+})
+
 // 期間変更
 const changePeriod = (days) => {
   selectedPeriod.value = days
@@ -103,18 +144,27 @@ const changePeriod = (days) => {
 // データを整形する関数
 const prepareChartData = () => {
   const dateRange = getDateRange(selectedPeriod.value)
-  const moodRecords = moodData.moodRecords
-  
-  // 各日の気分データを取得（記録がない日は中間値2を使用）
+
+  const levelMap = {
+    2: 1, // しんどい
+    3: 2, // まあまあ
+    4: 3  // いけるかも
+  }
   const chartData = dateRange.map(date => {
-    const record = moodRecords.find(r => r.date === date)
+    const record = moodRecordsRaw.value.find(r => r.date === date)
+
+    // mood_levelを3段階（1〜3）に変換
+    const originalLevel = record?.moodLevel
+    const convertedLevel = levelMap[originalLevel] ?? 2 // デフォルトはまあまあ
     return {
       date,
-      moodLevel: record ? record.moodLevel : 2, // デフォルトは「まあまあ」
+      moodLevel: convertedLevel,
       hasData: !!record
     }
   })
-  
+
+  console.log('📊 prepareChartData 結果:', chartData)
+
   return {
     labels: chartData.map(item => {
       const date = new Date(item.date)
@@ -123,17 +173,7 @@ const prepareChartData = () => {
     datasets: [{
       label: '気分の波',
       data: chartData.map(item => item.moodLevel),
-      borderColor: 'rgba(147, 197, 253, 0.8)', // やわらかい青
-      backgroundColor: 'rgba(147, 197, 253, 0.1)',
-      borderWidth: 3,
-      pointRadius: 5,
-      pointHoverRadius: 8,
-      pointBackgroundColor: 'rgba(147, 197, 253, 0.9)',
-      pointBorderColor: '#ffffff',
-      pointBorderWidth: 2,
-      tension: 0.5, // よりゆるやかな波線効果
-      fill: true,
-      fillColor: 'rgba(147, 197, 253, 0.05)'
+      /* スタイルはそのままでOK */
     }],
     rawData: chartData
   }
@@ -293,18 +333,6 @@ const initChart = () => {
   // rawDataを保存してツールチップで使用
   chartInstance.rawData = data.rawData
 }
-
-// コンポーネントがマウントされた時にチャートを初期化
-onMounted(() => {
-  initChart()
-})
-
-// コンポーネントがアンマウントされる時にチャートを破棄
-onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-})
 </script>
 
 <style scoped>
