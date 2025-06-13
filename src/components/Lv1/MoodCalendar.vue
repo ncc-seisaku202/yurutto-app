@@ -66,11 +66,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import moodData from '@/data/moodData.json'
+import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
 const currentDate = ref(new Date())
 const selectedDayData = ref(null)
+
+// Supabaseから取得したデータをここに入れる
+const moodRecords = ref([])
 
 // 計算プロパティ
 const currentYear = computed(() => currentDate.value.getFullYear())
@@ -95,35 +98,35 @@ const nextMonth = () => {
 
 const getMoodForDay = (day) => {
   const dateString = `${currentYear.value}-${String(currentMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  return moodData.moodRecords.find(record => record.date === dateString)
+  return moodRecords.value.find(record => record.date === dateString)
 }
 
 const getMoodClass = (day) => {
   const mood = getMoodForDay(day)
   if (!mood) return ''
-  
+
   switch (mood.moodLevel) {
-    case 1: return 'mood-bad'
-    case 2: return 'mood-normal'
-    case 3: return 'mood-good'
-    default: return ''
+    case 2: return 'mood-bad'     // しんどい
+    case 3: return 'mood-normal'  // まあまあ
+    case 4: return 'mood-good'    // いけるかも
+    default: return ''            // 1, 5 は表示しない
   }
 }
 
 const getMoodClassByLevel = (level) => {
   switch (level) {
-    case 1: return 'mood-bad'
-    case 2: return 'mood-normal'
-    case 3: return 'mood-good'
+    case 2: return 'mood-bad'
+    case 3: return 'mood-normal'
+    case 4: return 'mood-good'
     default: return ''
   }
 }
 
 const getMoodText = (level) => {
   switch (level) {
-    case 1: return '悪い'
-    case 2: return '普通'
-    case 3: return '良い'
+    case 2: return 'しんどい'
+    case 3: return 'まあまあ'
+    case 4: return 'いけるかも'
     default: return ''
   }
 }
@@ -131,20 +134,20 @@ const getMoodText = (level) => {
 const getMoodEmoji = (day) => {
   const mood = getMoodForDay(day)
   if (!mood) return ''
-  
+
   switch (mood.moodLevel) {
-    case 1: return '😔'
-    case 2: return '😐'
-    case 3: return '😊'
+    case 2: return '😔'
+    case 3: return '😐'
+    case 4: return '😊'
     default: return ''
   }
 }
 
 const getMoodEmojiByLevel = (level) => {
   switch (level) {
-    case 1: return '😔'
-    case 2: return '😐'
-    case 3: return '😊'
+    case 2: return '😔'
+    case 3: return '😐'
+    case 4: return '😊'
     default: return ''
   }
 }
@@ -179,9 +182,32 @@ const closeModal = () => {
   selectedDayData.value = null
 }
 
-onMounted(() => {
-  // 現在の日付に設定
+onMounted(async () => {
   currentDate.value = new Date()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    console.error('ユーザー情報取得失敗:', userError)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('moods')
+    .select('created_at, mood_level')
+    .eq('user_id', user.id)
+    .in('mood_level', [2, 3, 4])
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('気分データ取得失敗:', error)
+    return
+  }
+
+  // 日付文字列を整えて保存
+  moodRecords.value = data.map(entry => ({
+    date: entry.created_at.split('T')[0],
+    moodLevel: entry.mood_level
+  }))
 })
 </script>
 
@@ -315,15 +341,15 @@ onMounted(() => {
 }
 
 /* 気分に応じた背景色 */
-.day-cell.mood-bg-1 {
+.day-cell.mood-bg-2 {
   background: linear-gradient(135deg, #ffeef2 0%, #ffe0e8 100%);
 }
 
-.day-cell.mood-bg-2 {
+.day-cell.mood-bg-3 {
   background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
 }
 
-.day-cell.mood-bg-3 {
+.day-cell.mood-bg-4 {
   background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
 }
 

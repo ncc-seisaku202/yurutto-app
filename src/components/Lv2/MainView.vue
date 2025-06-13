@@ -2,7 +2,8 @@
   <div class="container">
     <MoodInput />
     <ActionGacha />
-    <MoodTrend />
+    <MemoTracker />
+    <MoodChart />
     <MoodCalendar />
     <NightModeToggle />
   </div>
@@ -10,10 +11,11 @@
 
 <script setup>
 import MoodInput from './MoodInput.vue'
-import ActionGacha from './ActionGacha.vue'
-import MoodTrend from './MoodTrend.vue'
-import MoodCalendar from './MoodCalendar.vue'
-import NightModeToggle from './NightModeToggle.vue'
+import ActionGacha from '../Lv1/ActionGacha.vue' // Lv1から再利用
+import MemoTracker from './MemoTracker.vue' // 新しいメモ機能
+import MoodChart from './MoodChart.vue' // Lv2専用のチャート
+import MoodCalendar from './MoodCalendar.vue' // Lv2専用のカレンダー
+import NightModeToggle from '../Lv1/NightModeToggle.vue' // Lv1から再利用
 </script>
 
 <style scoped>

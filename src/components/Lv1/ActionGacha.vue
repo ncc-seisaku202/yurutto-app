@@ -289,10 +289,10 @@ const resetGacha = () => {
 
 .treasure-glow {
   position: absolute;
-  top: -10px;
-  left: -10px;
-  width: 100px;
-  height: 100px;
+  top: -12.5%;
+  left: -12.5%;
+  width: 125%;
+  height: 125%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
   opacity: 0;

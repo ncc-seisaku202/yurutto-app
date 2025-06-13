@@ -32,7 +32,7 @@
       <button class="reset-button" @click="resetSelection">もう一度選ぶ</button>
     </div>
 
-    <div v-else-if="showConfirm">
+    <div v-else class="confirm-box">
       <div class="selected-mood-display">
         <span class="selected-emoji">{{ selectedEmoji }}</span>
         <p class="confirm-text">今日の気分は <strong>{{ selectedLabel }}</strong> で記録する？</p>
@@ -59,38 +59,20 @@
         </button>
       </div>
     </div>
-
-    <div v-else>
-      <div class="selected-mood-display">
-        <p class="confirm-text">今日の気分は記録したよ 🎉</p>
-      </div>
-    </div>
-
-    <!-- // 開発者ボタン -->
-    <div class="dev-button-container">
-      <button class="dev-reset-button" @click="resetMood">
-        🛠 開発者用：記録をリセット
-      </button>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
-import { moodMap } from '@/constants/moods'
+import { moodOptions, moodMap } from '@/constants/moods'
 const emit = defineEmits(['mood-selected'])
-
-const moodOptions = ref([
-  { label: 'しんどい', emoji: '😔', color: '#ff4dd2', value: 'tired' },       // ネオンピンク
-  { label: 'まあまあ', emoji: '😐', color: '#00ffff', value: 'so-so' },        // ネオンシアン
-  { label: 'いけるかも', emoji: '😊', color: '#ffb347', value: 'maybe-ok' },    // ネオンオレンジ
-])
 
 const selectedMood = ref(null)
 const selectedLabel = ref('')
 const selectedColor = ref('')
 const selectedEmoji = ref('')
+const selectedLevel = ref(0)
 const showConfirm = ref(false)
 const isCompleted = ref(false)
 const completedMood = ref(null)
@@ -100,6 +82,7 @@ function selectMood(option) {
   selectedLabel.value = option.label
   selectedColor.value = option.color
   selectedEmoji.value = option.emoji
+  selectedLevel.value = option.level
   showConfirm.value = true
 }
 
@@ -109,30 +92,27 @@ function goBack() {
   selectedLabel.value = ''
   selectedColor.value = ''
   selectedEmoji.value = ''
+  selectedLevel.value = 0
 }
 
-
-// // 開発者ボタン
-function resetMood() {
-  localStorage.removeItem('mood-recorded-date')
-  moodRecordedToday.value = false
-}
-
-// ESCキーで戻る
+// ESCキーでの戻る機能
 const handleKeydown = (event) => {
   if (event.key === 'Escape' && showConfirm.value) {
     goBack()
   }
 }
 
+// マウント時にキーボードイベントリスナーを追加
+import { onMounted, onUnmounted } from 'vue'
+
 onMounted(() => {
-  checkMoodRecorded()
   document.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
+
 async function confirmMood() {
   try {
     // ユーザー情報を取得
@@ -147,7 +127,7 @@ async function confirmMood() {
           id: crypto.randomUUID(),
           user_id: user.id,
           mood: selectedLabel.value,
-          mood_level: moodMap[selectedLabel.value]
+          mood_level: moodMap[selectedLabel.value],
         }])
 
       if (error) {
@@ -169,6 +149,7 @@ async function confirmMood() {
       value: selectedMood.value,
       label: selectedLabel.value,
       color: selectedColor.value,
+      level: selectedLevel.value,
       date: new Date().toISOString(),
     })
 
@@ -186,6 +167,7 @@ function resetSelection() {
   selectedLabel.value = ''
   selectedColor.value = ''
   completedMood.value = null
+  selectedLevel.value = 0
 }
 </script>
 
@@ -201,7 +183,7 @@ function resetSelection() {
 
 .form-container {
   width: 90%;
-  max-width: 500px;
+  max-width: 600px; /* 5段階に対応するため少し幅を広げる */
   margin: 1.5rem auto;
   background: var(--background-color);
   border: 1px solid var(--border-color);
@@ -221,18 +203,18 @@ function resetSelection() {
 .button-container {
   display: flex;
   justify-content: center;
-  gap: 1.2rem;
+  gap: 0.8rem; /* 5つのボタンに対応するためギャップを調整 */
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }
 
 .mood-button {
-  padding: 0.8rem 1.5rem;
-  width: 150px;
-  height: 60px;
+  padding: 0.8rem 1rem;
+  width: 110px; /* 5つのボタンに対応するため幅を調整 */
+  height: 70px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: bold;
   color: var(--text-color);
   cursor: pointer;
@@ -251,14 +233,20 @@ function resetSelection() {
 }
 
 .mood-label {
-  font-size: 1rem;
+  font-size: 0.8rem;
   line-height: 1;
+  text-align: center;
 }
 
 .mood-button:hover,
 .mood-button:focus {
   transform: scale(1.05);
   box-shadow: 0 0 20px white;
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.mood-button:focus {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
@@ -287,9 +275,15 @@ function resetSelection() {
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 
 .confirm-text {
@@ -348,43 +342,74 @@ function resetSelection() {
   outline-offset: 2px;
 }
 
-/* // 開発者ボタン */
-.dev-button-container {
-  margin-top: 2rem;
-  text-align: center;
-}
-
-.dev-reset-button {
-  background-color: #ff4444;
-  color: white;
-  font-weight: bold;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
-}
-
-.dev-reset-button:hover {
-  background-color: #cc0000;
-}
-
-/* レスポンシブ */
+/* レスポンシブデザインの改善 */
 @media (max-width: 768px) {
   .form-container {
     width: 95%;
     padding: 1rem;
     margin: 1rem auto;
   }
-
+  
   .button-container {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
   }
-
+  
   .mood-button {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .title {
+    font-size: 1.6rem;
+  }
+  
+  .confirm-text {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-container {
+    padding: 0.8rem;
+  }
+  
+  .title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .mood-button {
+    height: 60px;
+    font-size: 0.8rem;
+  }
+  
+  .mood-emoji {
+    font-size: 1.2rem;
+  }
+  
+  .mood-label {
+    font-size: 0.7rem;
+  }
+  
+  .selected-emoji {
+    font-size: 2.5rem;
+  }
+  
+  .confirm-text {
+    font-size: 1.1rem;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .back-button,
+  .ok-button {
+    font-size: 1rem;
+    padding: 0.7rem 1.5rem;
     width: 100%;
     max-width: 200px;
   }
