@@ -42,7 +42,7 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import moodDataLv2 from '@/data/moodDataLv2.json'
+import { supabase } from '@/lib/supabase'
 
 // Chart.jsの必要なコンポーネントを登録
 Chart.register(
@@ -61,14 +61,12 @@ const chartCanvas = ref(null)
 const selectedPeriod = ref(7)
 let chartInstance = null
 
-// 期間選択オプション
 const periods = ref([
   { value: 7, label: '1週間' },
   { value: 14, label: '2週間' },
   { value: 30, label: '1ヶ月' }
 ])
 
-// 5段階気分レベルのラベルマッピング
 const moodLabels = {
   1: 'とてもしんどい',
   2: 'しんどい',
@@ -77,19 +75,17 @@ const moodLabels = {
   5: 'とても良い'
 }
 
-// 気分レベルに応じた色を取得
 const getMoodColor = (level) => {
   const colors = {
-    1: '#ff1744', // とてもしんどい - 赤
-    2: '#ff4dd2', // しんどい - ピンク
-    3: '#00ffff', // まあまあ - シアン
-    4: '#ffb347', // いけるかも - オレンジ
-    5: '#4caf50'  // とても良い - 緑
+    1: '#ff1744',
+    2: '#ff4dd2',
+    3: '#00ffff',
+    4: '#ffb347',
+    5: '#4caf50'
   }
   return colors[level] || '#ddd'
 }
 
-// 指定期間の日付を生成
 const getDateRange = (days) => {
   const dates = []
   const today = new Date()
@@ -103,7 +99,6 @@ const getDateRange = (days) => {
   return dates
 }
 
-// やさしいメッセージを取得
 const getGentleMessage = () => {
   const messages = [
     '5段階で記録することで、より細かな気分の変化を見つめることができますね 🌸',
@@ -115,26 +110,70 @@ const getGentleMessage = () => {
   return messages[Math.floor(Math.random() * messages.length)]
 }
 
-// 期間変更
+const moodRecords = ref([])
+const moodRecordsRaw = ref([])
+
+onMounted(async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    console.error('ユーザー情報取得失敗:', userError)
+    return
+  }
+
+  // ★ 変更: select句から 'action_memo' を一時的に削除してエラーを回避します
+  const { data, error } = await supabase
+    .from('moods')
+    .select('created_at, mood_level') // 'action_memo' を削除
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    // エラーオブジェクトの詳細を出力するように変更
+    console.error('気分データ取得失敗:', JSON.stringify(error, null, 2))
+    return
+  }
+
+  moodRecords.value = data.map(entry => ({
+    date: entry.created_at.split('T')[0],
+    moodLevel: entry.mood_level
+    // ★ 削除: actionMemoの割り当てを削除
+    // actionMemo: entry.action_memo
+  }))
+
+  moodRecordsRaw.value = data.map(entry => ({
+    date: entry.created_at.split('T')[0],
+    moodLevel: entry.mood_level
+    // ★ 削除: actionMemoの割り当てを削除
+    // actionMemo: entry.action_memo
+  }))
+
+  initChart()
+})
+
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+})
+
 const changePeriod = (days) => {
   selectedPeriod.value = days
   updateChart()
 }
 
-// データを整形する関数
 const prepareChartData = () => {
   const dateRange = getDateRange(selectedPeriod.value)
-  const moodRecords = moodDataLv2.moodRecords
+  const currentMoodRecords = moodRecords.value
   
-  // 各日の気分データを取得（記録がない日は中間値3を使用）
   const chartData = dateRange.map(date => {
-    const record = moodRecords.find(r => r.date === date)
+    const record = currentMoodRecords.find(r => r.date === date)
     return {
       date,
-      moodLevel: record ? record.moodLevel : 3, // デフォルトは「まあまあ」
+      moodLevel: record ? record.moodLevel : 3,
       hasData: !!record,
-      mood: record ? record.mood : 'まあまあ',
-      actionMemo: record ? record.actionMemo : null
+      mood: record ? moodLabels[record.moodLevel] : moodLabels[3],
+      // ★ 変更: actionMemoは取得していないため、常にnullとします
+      actionMemo: null
     }
   })
   
@@ -146,7 +185,7 @@ const prepareChartData = () => {
     datasets: [{
       label: '気分の波',
       data: chartData.map(item => item.moodLevel),
-      borderColor: 'rgba(147, 197, 253, 0.8)', // やわらかい青
+      borderColor: 'rgba(147, 197, 253, 0.8)',
       backgroundColor: 'rgba(147, 197, 253, 0.1)',
       borderWidth: 3,
       pointRadius: 6,
@@ -154,7 +193,7 @@ const prepareChartData = () => {
       pointBackgroundColor: chartData.map(item => getMoodColor(item.moodLevel)),
       pointBorderColor: '#ffffff',
       pointBorderWidth: 2,
-      tension: 0.4, // よりゆるやかな波線効果
+      tension: 0.4,
       fill: true,
       fillColor: 'rgba(147, 197, 253, 0.05)'
     }],
@@ -162,21 +201,17 @@ const prepareChartData = () => {
   }
 }
 
-// チャート更新関数
 const updateChart = () => {
   if (chartInstance) {
     const newData = prepareChartData()
     chartInstance.data.labels = newData.labels
     chartInstance.data.datasets[0].data = newData.datasets[0].data
     chartInstance.data.datasets[0].pointBackgroundColor = newData.datasets[0].pointBackgroundColor
-    // rawDataも更新
     chartInstance.rawData = newData.rawData
-    // パフォーマンス向上のため'none'モードで更新
     chartInstance.update('none')
   }
 }
 
-// チャートを初期化
 const initChart = () => {
   if (!chartCanvas.value) return
   
@@ -192,7 +227,7 @@ const initChart = () => {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
-        duration: 300, // アニメーション時間を短縮
+        duration: 300,
         easing: 'easeOutQuart'
       },
       interaction: {
@@ -202,7 +237,7 @@ const initChart = () => {
       elements: {
         point: {
           hoverRadius: 10,
-          hitRadius: 15 // ホバー検出範囲を拡大
+          hitRadius: 15
         },
         line: {
           tension: 0.4
@@ -245,6 +280,7 @@ const initChart = () => {
               
               if (rawData && rawData[index]) {
                 const hasData = rawData[index].hasData
+                // ★ 変更: actionMemoは現在取得していないため、関連ロジックは常にfalseになりますが、将来のために残しておきます
                 const actionMemo = rawData[index].actionMemo
                 
                 let tooltipText = `気分: ${label} 🌊`
@@ -320,24 +356,12 @@ const initChart = () => {
     }
   })
   
-  // rawDataを保存してツールチップで使用
   chartInstance.rawData = data.rawData
 }
-
-// コンポーネントがマウントされた時にチャートを初期化
-onMounted(() => {
-  initChart()
-})
-
-// コンポーネントがアンマウントされる時にチャートを破棄
-onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-})
 </script>
 
 <style scoped>
+/* CSSは変更なし */
 .mood-chart-container {
   width: 100%;
   margin: 0;

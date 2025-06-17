@@ -76,19 +76,21 @@
           </div>
         </div>
       </div>
-      
       <button @click="selectedDate = null" class="close-details">閉じる</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import moodDataLv2 from '@/data/moodDataLv2.json'
+import { ref, computed, onMounted, watch } from 'vue'
+import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
 const currentDate = ref(new Date())
 const selectedDate = ref(null)
+
+// Supabaseから取得したデータをここに入れる
+const moodRecords = ref([])
 
 // 曜日ヘッダー
 const dayHeaders = ['日', '月', '火', '水', '木', '金', '土']
@@ -109,7 +111,7 @@ const currentMonthYear = computed(() => {
   return `${year}年${month}月`
 })
 
-// 気分レベルに対応する絵文字を取得
+// 気分レベルに対応する絵文字を取得 (指示に合わせたもの)
 const getMoodEmoji = (level) => {
   const emojis = {
     1: '😰',
@@ -119,6 +121,18 @@ const getMoodEmoji = (level) => {
     5: '😄'
   }
   return emojis[level] || '😐'
+}
+
+// 気分レベルに対応するテキストを取得（詳細表示用）
+const getMoodTextByLevel = (level) => {
+  const texts = {
+    1: 'とてもしんどい',
+    2: 'しんどい',
+    3: '普通',
+    4: 'いけるかも',
+    5: 'とても良い'
+  }
+  return texts[level] || '不明'
 }
 
 // カテゴリの絵文字を取得
@@ -139,7 +153,6 @@ const formatTime = (timestamp) => {
 
 // 選択された日付をフォーマット
 const formatSelectedDate = (dateString) => {
-  // タイムゾーンの影響を避けるため、文字列から直接パース
   const parts = dateString.split('-')
   const month = parseInt(parts[1], 10)
   const day = parseInt(parts[2], 10)
@@ -151,15 +164,12 @@ const calendarDates = computed(() => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
   
-  // 月の最初の日と最後の日
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
   
-  // カレンダーの開始日（前月の日曜日から）
   const startDate = new Date(firstDay)
   startDate.setDate(startDate.getDate() - firstDay.getDay())
   
-  // カレンダーの終了日（次月の土曜日まで）
   const endDate = new Date(lastDay)
   endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()))
   
@@ -168,22 +178,22 @@ const calendarDates = computed(() => {
   const today = new Date()
   
   while (currentDateObj <= endDate) {
-    // タイムゾーンの影響を避けるため、ローカル日付から文字列を生成
-    const year = currentDateObj.getFullYear()
-    const month_num = currentDateObj.getMonth() + 1
-    const day_num = currentDateObj.getDate()
-    const dateString = `${year}-${month_num.toString().padStart(2, '0')}-${day_num.toString().padStart(2, '0')}`
+    const year_str = currentDateObj.getFullYear()
+    const month_str = (currentDateObj.getMonth() + 1).toString().padStart(2, '0')
+    const day_str = currentDateObj.getDate().toString().padStart(2, '0')
+    const dateString = `${year_str}-${month_str}-${day_str}`
     
-    const moodRecord = moodDataLv2.moodRecords.find(record => record.date === dateString)
+    const moodRecord = moodRecords.value.find(record => record.date === dateString)
     
     dates.push({
       key: dateString,
       dateString,
-      day: day_num,
+      day: currentDateObj.getDate(),
       isCurrentMonth: currentDateObj.getMonth() === month,
       isToday: currentDateObj.toDateString() === today.toDateString(),
       hasMood: !!moodRecord,
       moodLevel: moodRecord?.moodLevel,
+      // dailyMemosは取得しないので、memoCountは常に0になります
       memoCount: moodRecord?.dailyMemos?.length || 0
     })
     
@@ -196,7 +206,14 @@ const calendarDates = computed(() => {
 // 選択された日のデータ
 const selectedDateData = computed(() => {
   if (!selectedDate.value) return null
-  return moodDataLv2.moodRecords.find(record => record.date === selectedDate.value)
+  const record = moodRecords.value.find(record => record.date === selectedDate.value)
+  if (record) {
+    return {
+      ...record,
+      mood: getMoodTextByLevel(record.moodLevel)
+    }
+  }
+  return null
 })
 
 // 前の月に移動
@@ -222,15 +239,61 @@ const selectDate = (date) => {
   }
 }
 
-// コンポーネントマウント時の処理
+// Supabaseから気分データを取得する関数
+const fetchMoodRecords = async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    console.error('ユーザー情報取得失敗:', userError?.message || userError)
+    moodRecords.value = []
+    return
+  }
+
+  const year = currentDate.value.getFullYear();
+  const month = currentDate.value.getMonth();
+  
+  const startOfMonth = new Date(year, month, 1)
+  const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999)
+
+  // 【修正点】: select句から存在しないカラムを削除。mood_levelのみ取得します。
+  const { data, error } = await supabase
+    .from('moods')
+    .select('created_at, mood_level')
+    .eq('user_id', user.id)
+    .gte('created_at', startOfMonth.toISOString())
+    .lte('created_at', endOfMonth.toISOString())
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('気分データ取得失敗:', error.message || error)
+    moodRecords.value = []
+    return
+  }
+
+  // 【修正点】: 取得したデータ（mood_levelのみ）をマッピングします。
+  moodRecords.value = data.map(entry => {
+    const datePart = entry.created_at.split('T')[0] 
+    return {
+      date: datePart,
+      moodLevel: entry.mood_level,
+      // gachaResultなどはデータにないため、テンプレート側で表示されなくなります
+      gachaResult: null,
+      actionMemo: null,
+      dailyMemos: []
+    }
+  })
+}
+
+watch(currentDate, fetchMoodRecords, { immediate: true })
+
 onMounted(() => {
-  // 今日の日付に移動
-  const today = new Date()
-  currentDate.value = new Date(today.getFullYear(), today.getMonth(), 1)
+  // watchの immediate: true で初期ロードが実行されるため、ここは空でOK
 })
 </script>
 
 <style scoped>
+/* スタイルはレベル1とレベル2で見た目が異なるが、指示に従い変更していません。 */
+/* レベル2の元々のスタイルをそのまま維持します。 */
+
 .mood-calendar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
