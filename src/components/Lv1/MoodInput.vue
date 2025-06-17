@@ -3,6 +3,7 @@
     class="form-container"
     :style="{ backgroundColor: showConfirm ? selectedColor : '#fff' }"
   >
+    <!-- 記録前＆確認画面でもない場合 (初期表示) -->
     <div v-if="!showConfirm && !isCompleted">
       <h1 class="title">今日の気分は？</h1>
       <div class="button-container">
@@ -23,15 +24,7 @@
       <p class="subtext">一つ選ぼう！！</p>
     </div>
 
-    <div v-else-if="isCompleted" class="completed-box">
-      <h1 class="title">記録完了！</h1>
-      <div class="completed-mood" :style="{ backgroundColor: completedMood.color }">
-        {{ completedMood.label }}
-      </div>
-      <p class="completed-text">今日の気分を記録しました</p>
-      <button class="reset-button" @click="resetSelection">もう一度選ぶ</button>
-    </div>
-
+    <!-- 確認画面の場合 -->
     <div v-else-if="showConfirm">
       <div class="selected-mood-display">
         <span class="selected-emoji">{{ selectedEmoji }}</span>
@@ -60,10 +53,15 @@
       </div>
     </div>
 
-    <div v-else>
-      <div class="selected-mood-display">
-        <p class="confirm-text">今日の気分は記録したよ 🎉</p>
+    <!-- 記録完了後の場合 -->
+    <div v-else-if="isCompleted" class="completed-box">
+      <h1 class="title">記録完了！</h1>
+      <div class="completed-mood" :style="{ backgroundColor: completedMood.color }">
+        {{ completedMood.label }}
       </div>
+      <p class="completed-text">今日の気分を記録しました 🎉</p>
+      <!-- 「もう一度選ぶ」ボタンは開発用に残すか、仕様に応じて削除 -->
+      <!-- <button class="reset-button" @click="resetSelection">もう一度選ぶ</button> -->
     </div>
 
     <!-- // 開発者ボタン -->
@@ -76,15 +74,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { supabase } from '@/lib/supabase'
+import { ref, onMounted, onUnmounted } from 'vue'
+// supabaseとmoodsのパスは実際のプロジェクト構成に合わせてください
+import { supabase } from '@/lib/supabase' 
 import { moodMap } from '@/constants/moods'
+
 const emit = defineEmits(['mood-selected'])
 
 const moodOptions = ref([
-  { label: 'しんどい', emoji: '😔', color: '#ff4dd2', value: 'tired' },       // ネオンピンク
-  { label: 'まあまあ', emoji: '😐', color: '#00ffff', value: 'so-so' },        // ネオンシアン
-  { label: 'いけるかも', emoji: '😊', color: '#ffb347', value: 'maybe-ok' },    // ネオンオレンジ
+  { label: 'しんどい', emoji: '😔', color: '#ff4dd2', value: 'tired' },
+  { label: 'まあまあ', emoji: '😐', color: '#00ffff', value: 'so-so' },
+  { label: 'いけるかも', emoji: '😊', color: '#ffb347', value: 'maybe-ok' },
 ])
 
 const selectedMood = ref(null)
@@ -94,6 +94,59 @@ const selectedEmoji = ref('')
 const showConfirm = ref(false)
 const isCompleted = ref(false)
 const completedMood = ref(null)
+
+// 今日の日付文字列を取得 (YYYY-MM-DD)
+function getTodayDateStr() {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
+// ページ読み込み時に今日の気分が記録済みかチェックする
+async function checkMoodRecorded() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      // ローカルストレージでフォールバック
+      const storedDate = localStorage.getItem('mood-recorded-date')
+      if (storedDate === getTodayDateStr()) {
+        isCompleted.value = true
+        // 完了時の表示情報を復元
+        const localMood = JSON.parse(localStorage.getItem('last-mood'))
+        if (localMood) completedMood.value = localMood
+      }
+      return
+    }
+
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const { data, error } = await supabase
+      .from('moods')
+      .select('mood, mood_level')
+      .eq('user_id', user.id)
+      .gte('created_at', todayStart.toISOString())
+      .single() // 今日は1件のはずなのでsingle()でOK
+
+    if (error && error.code !== 'PGRST116') { // PGRST116は「行が見つからない」エラーなので無視
+      throw error
+    }
+    
+    if (data) {
+      isCompleted.value = true
+      // 完了画面用のデータを設定
+      const moodOption = moodOptions.value.find(o => o.label === data.mood)
+      if (moodOption) {
+        completedMood.value = {
+          label: data.mood,
+          value: moodOption.value,
+          color: moodOption.color,
+        }
+      }
+    }
+  } catch (err) {
+    console.error('記録チェックエラー:', err.message)
+  }
+}
 
 function selectMood(option) {
   selectedMood.value = option.value
@@ -111,11 +164,69 @@ function goBack() {
   selectedEmoji.value = ''
 }
 
+async function confirmMood() {
+  try {
+    const moodData = {
+      value: selectedMood.value,
+      label: selectedLabel.value,
+      color: selectedColor.value,
+      emoji: selectedEmoji.value,
+      date: new Date().toISOString(),
+    }
+    
+    // ユーザー情報を取得
+    const { data: { user } } = await supabase.auth.getUser()
 
-// // 開発者ボタン
+    if (user) {
+      // Supabaseにinsert（ログインしている場合のみ）
+      const { error } = await supabase
+        .from('moods')
+        .insert([{
+          // id: crypto.randomUUID(), // DB側で自動生成されるなら不要
+          user_id: user.id,
+          mood: moodData.label,
+          mood_level: moodMap[moodData.label]
+        }])
+
+      if (error) {
+        throw new Error(`Supabaseへの保存に失敗: ${error.message}`)
+      }
+    } else {
+       console.warn('ユーザーがログインしていません。ローカルでのみ記録します。')
+    }
+    
+    // ログイン状態に関わらずローカルストレージにも記録（フォールバック用）
+    localStorage.setItem('mood-recorded-date', getTodayDateStr())
+    localStorage.setItem('last-mood', JSON.stringify({ label: moodData.label, value: moodData.value, color: moodData.color }))
+
+
+    // 完了状態を設定
+    completedMood.value = {
+      label: moodData.label,
+      value: moodData.value,
+      color: moodData.color
+    }
+
+    emit('mood-selected', moodData)
+
+    showConfirm.value = false
+    isCompleted.value = true
+
+  } catch (error) {
+    console.error('予期しないエラー:', error)
+    alert('記録に失敗しました。')
+    goBack() // エラー時は選択画面に戻す
+  }
+}
+
+// 開発者用リセットボタン
 function resetMood() {
   localStorage.removeItem('mood-recorded-date')
-  moodRecordedToday.value = false
+  localStorage.removeItem('last-mood')
+  isCompleted.value = false
+  completedMood.value = null
+  goBack()
+  console.log('開発者用リセットが実行されました。')
 }
 
 // ESCキーで戻る
@@ -133,60 +244,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
-async function confirmMood() {
-  try {
-    // ユーザー情報を取得
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      console.warn('ユーザーがログインしていません。ローカルでのみ記録します。', userError)
-    } else {
-      // Supabaseにinsert（ログインしている場合のみ）
-      const { error } = await supabase
-        .from('moods')
-        .insert([{
-          id: crypto.randomUUID(),
-          user_id: user.id,
-          mood: selectedLabel.value,
-          mood_level: moodMap[selectedLabel.value]
-        }])
-
-      if (error) {
-        console.error('保存に失敗:', error)
-      } else {
-        console.log('気分を記録しました！')
-      }
-    }
-
-    // 完了状態を設定
-    completedMood.value = {
-      label: selectedLabel.value,
-      value: selectedMood.value,
-      color: selectedColor.value
-    }
-
-    // 既存のemitもそのまま残す（ログイン状態に関係なく実行）
-    emit('mood-selected', {
-      value: selectedMood.value,
-      label: selectedLabel.value,
-      color: selectedColor.value,
-      date: new Date().toISOString(),
-    })
-
-    showConfirm.value = false
-    isCompleted.value = true
-  } catch (error) {
-    console.error('予期しないエラー:', error)
-    showConfirm.value = false
-  }
-}
-
-function resetSelection() {
-  isCompleted.value = false
-  selectedMood.value = null
-  selectedLabel.value = ''
-  selectedColor.value = ''
-  completedMood.value = null
-}
 </script>
 
 <style scoped>
@@ -268,10 +325,6 @@ function resetSelection() {
   color: #333;
 }
 
-.confirm-box {
-  margin-top: 6vh;
-}
-
 .selected-mood-display {
   display: flex;
   flex-direction: column;
@@ -348,7 +401,6 @@ function resetSelection() {
   outline-offset: 2px;
 }
 
-/* // 開発者ボタン */
 .dev-button-container {
   margin-top: 2rem;
   text-align: center;
@@ -368,26 +420,6 @@ function resetSelection() {
 
 .dev-reset-button:hover {
   background-color: #cc0000;
-}
-
-/* レスポンシブ */
-@media (max-width: 768px) {
-  .form-container {
-    width: 95%;
-    padding: 1rem;
-    margin: 1rem auto;
-  }
-
-  .button-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .mood-button {
-    width: 100%;
-    max-width: 200px;
-  }
 }
 
 .completed-box {
@@ -427,5 +459,24 @@ function resetSelection() {
 
 .reset-button:hover {
   background-color: #218838;
+}
+
+@media (max-width: 768px) {
+  .form-container {
+    width: 95%;
+    padding: 1rem;
+    margin: 1rem auto;
+  }
+
+  .button-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .mood-button {
+    width: 100%;
+    max-width: 200px;
+  }
 }
 </style>
