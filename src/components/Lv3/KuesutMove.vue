@@ -67,7 +67,7 @@
 
 <script>
 export default {
-  name: 'Kuesut',
+  name: 'KuesutMove',
   data() {
     return {
       quest: {

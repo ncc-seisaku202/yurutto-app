@@ -2,7 +2,7 @@
   <div class="container">
     <MoodInput3 />
     <ActionGacha3 />
-    <kuesut />
+    <KuesutMove />
     <MoodCalendar />
     <NightModeToggle />
   </div>
@@ -11,9 +11,8 @@
 <script setup>
 import MoodInput3 from './MoodInput3.vue'
 import ActionGacha3 from './ActionGacha3.vue'
-import kuesut from './kuesut.vue'
-import MoodCalendar from './MoodCalendar.vue'
-import NightModeToggle from './NightModeToggle.vue'
+import KuesutMove from './KuesutMove.vue'
+import MoodCalendar from '../Lv1/MoodCalendar.vue'
 </script>
 
 <style scoped>

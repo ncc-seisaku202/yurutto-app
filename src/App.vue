@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import Lv1 from './components/Lv1/MainView.vue'
 import Lv2 from './components/Lv2/MainView.vue'
+import Lv3 from './components/Lv3/MainView.vue'
 import Lv4 from './components/Lv4/MainView.vue' // ← 追加
 import LoginForm from './components/LoginForm.vue'
 
@@ -79,6 +80,12 @@ onMounted(async () => {
               Lv2
             </button>
             <button
+              :class="['level-btn', { active: currentLevel === 'Lv3' }]"
+              @click="currentLevel = 'Lv3'"
+            >
+              Lv3
+            </button>
+            <button
               :class="['level-btn', { active: currentLevel === 'Lv4' }]"
               @click="currentLevel = 'Lv4'"
             >
@@ -93,6 +100,7 @@ onMounted(async () => {
       <!-- レベルに応じてコンポーネントを切り替え -->
       <Lv1 v-if="currentLevel === 'Lv1'" />
       <Lv2 v-if="currentLevel === 'Lv2'" />
+      <Lv3 v-if="currentLevel === 'Lv3'" />
       <Lv4 v-if="currentLevel === 'Lv4'" />
     </div>
   </div>
