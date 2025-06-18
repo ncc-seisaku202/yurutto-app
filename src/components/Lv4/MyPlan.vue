@@ -25,7 +25,7 @@
       <label>ステップを追加</label>
       <div class="step-input">
         <input v-model="newStep" placeholder="例: 毎朝7時に起きる" />
-        <button @click="addStep" :disabled="!newStep.trim()">追加</button>
+        <button @click="addStepAndSave" :disabled="!newStep.trim()">追加して保存</button>
       </div>
 
       <!-- 進捗バー -->
@@ -43,7 +43,7 @@
       <ul class="step-list">
         <li v-for="(step, index) in steps" :key="index">
           <label>
-            <input type="checkbox" v-model="step.completed" />
+            <input type="checkbox" v-model="step.completed" @change="savePlan" />
             <span :class="{ done: step.completed }">{{ step.text }}</span>
           </label>
         </li>
@@ -53,22 +53,50 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const planTitle = ref('')
 const selectedDuration = ref('')
 const newStep = ref('')
 const steps = ref([])
 
-const addStep = () => {
+const addStepAndSave = () => {
   steps.value.push({ text: newStep.value, completed: false })
   newStep.value = ''
+  savePlan()
 }
 
 const completedSteps = computed(() => steps.value.filter(s => s.completed).length)
 const progressPercent = computed(() => {
   if (steps.value.length === 0) return 0
   return Math.round((completedSteps.value / steps.value.length) * 100)
+})
+
+const savePlan = () => {
+  const planData = {
+    title: planTitle.value,
+    duration: selectedDuration.value,
+    steps: steps.value
+  }
+  localStorage.setItem('myPlan', JSON.stringify(planData))
+  console.log('保存しました:', planData)
+}
+
+const loadPlan = () => {
+  const saved = localStorage.getItem('myPlan')
+  if (!saved) return
+  try {
+    const data = JSON.parse(saved)
+    planTitle.value = data.title
+    selectedDuration.value = data.duration
+    steps.value = data.steps
+  } catch (e) {
+    console.warn('読み込みエラー', e)
+  }
+}
+
+onMounted(() => {
+  loadPlan()
 })
 </script>
 
