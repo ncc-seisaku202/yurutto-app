@@ -5,7 +5,18 @@
     <!-- 目標名入力 -->
     <div class="form-group">
       <label for="goal">目標名</label>
-      <input id="goal" v-model="planTitle" type="text" placeholder="例: 朝の散歩を習慣にする" />
+      <div class="goal-input-group">
+        <input
+          id="goal"
+          v-model="planTitle"
+          :disabled="!isEditingTitle"
+          type="text"
+          placeholder="例: 朝の散歩を習慣にする"
+        />
+        <button @click="toggleTitleEdit">
+          {{ isEditingTitle ? '確定' : '目標名を変更' }}
+        </button>
+      </div>
     </div>
 
     <!-- 期間選択 -->
@@ -39,15 +50,36 @@
         <p class="progress-text">{{ completedSteps }}/{{ steps.length }} ステップ完了</p>
       </div>
 
-      <!-- ステップ一覧 -->
-      <ul class="step-list">
-        <li v-for="(step, index) in steps" :key="index">
-          <label>
-            <input type="checkbox" v-model="step.completed" @change="savePlan" />
-            <span :class="{ done: step.completed }">{{ step.text }}</span>
-          </label>
-        </li>
-      </ul>
+      <!-- ステップ一覧（カード型） -->
+      <div class="step-cards">
+        <div
+          v-for="(step, index) in steps"
+          :key="index"
+          class="step-card"
+          :class="{ completed: step.completed }"
+        >
+          <div class="step-card-inner" @click="openModal(step, index)">
+            <span class="step-text">{{ step.text }}</span>
+          </div>
+          <input
+            type="checkbox"
+            class="step-checkbox"
+            v-model="step.completed"
+            @change="savePlan"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 詳細表示モーダル -->
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>ステップの詳細</h3>
+        <p>{{ selectedStep?.text }}</p>
+        <p>状態: {{ selectedStep?.completed ? '完了' : '未完了' }}</p>
+        <button @click="deleteSelectedStep">このステップを削除</button>
+        <button @click="closeModal">閉じる</button>
+      </div>
     </div>
   </div>
 </template>
@@ -56,14 +88,45 @@
 import { ref, computed, onMounted } from 'vue'
 
 const planTitle = ref('')
+const isEditingTitle = ref(true)
 const selectedDuration = ref('')
 const newStep = ref('')
 const steps = ref([])
+const isModalOpen = ref(false)
+const selectedStep = ref(null)
+const selectedIndex = ref(null)
+
+const toggleTitleEdit = () => {
+  isEditingTitle.value = !isEditingTitle.value
+  if (!isEditingTitle.value) {
+    savePlan()
+  }
+}
 
 const addStepAndSave = () => {
   steps.value.push({ text: newStep.value, completed: false })
   newStep.value = ''
   savePlan()
+}
+
+const openModal = (step, index) => {
+  selectedStep.value = step
+  selectedIndex.value = index
+  isModalOpen.value = true
+}
+
+const closeModal = () => {
+  isModalOpen.value = false
+  selectedStep.value = null
+  selectedIndex.value = null
+}
+
+const deleteSelectedStep = () => {
+  if (selectedIndex.value !== null) {
+    steps.value.splice(selectedIndex.value, 1)
+    savePlan()
+    closeModal()
+  }
 }
 
 const completedSteps = computed(() => steps.value.filter(s => s.completed).length)
@@ -90,6 +153,7 @@ const loadPlan = () => {
     planTitle.value = data.title
     selectedDuration.value = data.duration
     steps.value = data.steps
+    isEditingTitle.value = false
   } catch (e) {
     console.warn('読み込みエラー', e)
   }
@@ -154,20 +218,79 @@ input[type="text"], select {
   background-color: #aaa;
   cursor: not-allowed;
 }
-.step-list {
-  list-style: none;
-  padding: 0;
+.step-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-top: 1rem;
 }
-.step-list li {
-  margin-bottom: 0.75rem;
+.step-card {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: background-color 0.3s;
 }
-.step-list input[type="checkbox"] {
-  margin-right: 0.5rem;
+.step-card.completed {
+  background-color: #e6f9e6;
+  border-color: #28a745;
 }
-.done {
-  text-decoration: line-through;
-  color: #999;
+.step-card-inner {
+  cursor: pointer;
+  padding-right: 2rem;
+}
+.step-text {
+  display: inline-block;
+  font-size: 1rem;
+}
+.step-checkbox {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
+}
+.modal-content button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.modal-content button:first-of-type {
+  background-color: #dc3545;
+  color: white;
+}
+.modal-content button:last-of-type {
+  background-color: #6c757d;
+  color: white;
 }
 .progress-bar-wrapper {
   margin-bottom: 1rem;
@@ -188,4 +311,27 @@ input[type="text"], select {
   margin-top: 0.25rem;
   color: #555;
 }
+.goal-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.goal-input-group input[disabled] {
+  background-color: #f1f1f1;
+  color: #666;
+  cursor: not-allowed;
+}
+.goal-input-group button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #6c757d;
+  color: white;
+  cursor: pointer;
+}
+.goal-input-group button:hover {
+  background-color: #5a6268;
+}
 </style>
+
