@@ -2,68 +2,73 @@
   <div class="my-plan">
     <h2 class="section-title">🎯 マイプラン</h2>
 
-    <!-- 目標名入力 -->
-    <div class="form-group">
-      <label for="goal">目標名</label>
-      <div class="goal-input-group">
-        <input
-          id="goal"
-          v-model="planTitle"
-          :disabled="!isEditingTitle"
-          type="text"
-          placeholder="例: 朝の散歩を習慣にする"
-        />
-        <button @click="toggleTitleEdit">
-          {{ isEditingTitle ? '確定' : '目標名を変更' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- 期間選択 -->
-    <div class="form-group">
-      <label for="duration">期間</label>
-      <select id="duration" v-model="selectedDuration">
-        <option disabled value="">選択してください</option>
-        <option value="7">1週間</option>
-        <option value="14">2週間</option>
-        <option value="21">3週間</option>
-        <option value="28">4週間</option>
-      </select>
-    </div>
-
-    <!-- ステップ追加エリア -->
-    <div class="step-section">
-      <label>ステップを追加</label>
-      <div class="step-input">
-        <input v-model="newStep" placeholder="例: 毎朝7時に起きる" />
-        <button @click="addStepAndSave" :disabled="!newStep.trim()">追加して保存</button>
-      </div>
-
-      <!-- 進捗バー -->
-      <div class="progress-bar-wrapper" v-if="steps.length">
-        <div class="progress-bar">
-          <div class="progress" :style="{ width: progressPercent + '%' }"></div>
-        </div>
-        <p class="progress-text">{{ completedSteps }}/{{ steps.length }} ステップ完了</p>
-      </div>
-
-      <!-- ステップ一覧（カード型） -->
-      <div class="step-cards">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          class="step-card"
-          :class="{ completed: step.completed }"
-        >
-          <div class="step-card-inner" @click="openModal(step, index)">
-            <span class="step-text">{{ step.text }}</span>
-          </div>
+    <!-- カード：目標と期間 -->
+    <div class="card-section">
+      <!-- 目標名入力 -->
+      <div class="form-group">
+        <label for="goal">目標名</label>
+        <div class="goal-input-group">
           <input
-            type="checkbox"
-            class="step-checkbox"
-            v-model="step.completed"
-            @change="handleCheckboxChange($event)"
+            id="goal"
+            v-model="planTitle"
+            :disabled="!isEditingTitle"
+            type="text"
+            placeholder="例: 朝の散歩を習慣にする"
           />
+          <button @click="toggleTitleEdit">
+            {{ isEditingTitle ? '確定' : '目標名を変更' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 期間選択 -->
+      <div class="form-group">
+        <label for="duration">期間</label>
+        <select id="duration" v-model="selectedDuration">
+          <option disabled value="">選択してください</option>
+          <option value="7">1週間</option>
+          <option value="14">2週間</option>
+          <option value="21">3週間</option>
+          <option value="28">4週間</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- カード：ステップ追加と進捗 -->
+    <div class="card-section">
+      <div class="step-section">
+        <label>ステップを追加</label>
+        <div class="step-input">
+          <input v-model="newStep" placeholder="例: 毎朝7時に起きる" />
+          <button @click="addStepAndSave" :disabled="!newStep.trim()">追加して保存</button>
+        </div>
+
+        <!-- 進捗バー -->
+        <div class="progress-bar-wrapper" v-if="steps.length">
+          <div class="progress-bar">
+            <div class="progress" :style="{ width: progressPercent + '%' }"></div>
+          </div>
+          <p class="progress-text">{{ completedSteps }}/{{ steps.length }} ステップ完了</p>
+        </div>
+
+        <!-- ステップ一覧 -->
+        <div class="step-cards">
+          <div
+            v-for="(step, index) in steps"
+            :key="index"
+            class="step-card"
+            :class="{ completed: step.completed }"
+          >
+            <div class="step-card-inner" @click="openModal(step, index)">
+              <span class="step-text">{{ step.text }}</span>
+            </div>
+            <input
+              type="checkbox"
+              class="step-checkbox"
+              v-model="step.completed"
+              @change="handleCheckboxChange($event)"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -348,4 +353,16 @@ input[type="text"], select {
 .goal-input-group button:hover {
   background-color: #5a6268;
 }
+.card-section {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  transition: box-shadow 0.3s ease;
+}
+.card-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 </style>
