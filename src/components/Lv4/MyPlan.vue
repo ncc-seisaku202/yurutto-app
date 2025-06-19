@@ -42,10 +42,7 @@
       <!-- 進捗バー -->
       <div class="progress-bar-wrapper" v-if="steps.length">
         <div class="progress-bar">
-          <div
-            class="progress"
-            :style="{ width: progressPercent + '%' }"
-          ></div>
+          <div class="progress" :style="{ width: progressPercent + '%' }"></div>
         </div>
         <p class="progress-text">{{ completedSteps }}/{{ steps.length }} ステップ完了</p>
       </div>
@@ -65,7 +62,7 @@
             type="checkbox"
             class="step-checkbox"
             v-model="step.completed"
-            @change="savePlan"
+            @change="handleCheckboxChange($event)"
           />
         </div>
       </div>
@@ -129,6 +126,15 @@ const deleteSelectedStep = () => {
   }
 }
 
+const handleCheckboxChange = (event) => {
+  const checkbox = event.target
+  checkbox.classList.add('animate')
+  setTimeout(() => {
+    checkbox.classList.remove('animate')
+  }, 300)
+  savePlan()
+}
+
 const completedSteps = computed(() => steps.value.filter(s => s.completed).length)
 const progressPercent = computed(() => {
   if (steps.value.length === 0) return 0
@@ -165,6 +171,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.step-checkbox.animate {
+  animation: pop 0.3s ease;
+}
+
 .my-plan {
   background: #fdfdfd;
   border-radius: 12px;
@@ -334,4 +349,3 @@ input[type="text"], select {
   background-color: #5a6268;
 }
 </style>
-
