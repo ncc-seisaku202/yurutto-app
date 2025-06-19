@@ -186,16 +186,34 @@ onMounted(() => {
 }
 
 .my-plan {
-  background: #fdfdfd;
+  background: #f0f8ff; /* やわらかいブルー */
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: #445566;
 }
+
 .section-title {
   font-size: 1.6rem;
   font-weight: bold;
+  color: #445566;
   margin-bottom: 1.5rem;
 }
+
+.card-section {
+  background-color: #ffffff;
+  border: 2px solid #dceefa; /* 薄い水色の枠線 */
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(145, 201, 247, 0.2);
+  margin-bottom: 2rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.card-section:hover {
+  box-shadow: 0 4px 12px rgba(145, 201, 247, 0.25);
+}
+
 .form-group {
   margin-bottom: 1.2rem;
   display: flex;
@@ -206,14 +224,18 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 input[type="text"], select {
+  background-color: #ffffff;
+  border: 1px solid #cce3f5;
+  border-radius: 6px;
   padding: 0.6rem 0.8rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  color: #333;
 }
+
 .step-section {
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
+
 .step-input {
   display: flex;
   gap: 0.5rem;
@@ -228,16 +250,19 @@ input[type="text"], select {
 }
 .step-input button {
   padding: 0.5rem 1rem;
-  background-color: #007bff;
+  background-color: #f8c8dc; /* ピンクアクセント */
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: bold;
 }
 .step-input button:disabled {
-  background-color: #aaa;
+  background-color: #ddd;
+  color: #aaa;
   cursor: not-allowed;
 }
+
 .step-cards {
   display: flex;
   flex-direction: column;
@@ -254,8 +279,8 @@ input[type="text"], select {
   transition: background-color 0.3s;
 }
 .step-card.completed {
-  background-color: #e6f9e6;
-  border-color: #28a745;
+  background-color: #eef6f9;
+  border-color: #91c9f7;
 }
 .step-card-inner {
   cursor: pointer;
@@ -273,6 +298,7 @@ input[type="text"], select {
   height: 20px;
   cursor: pointer;
 }
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -287,15 +313,17 @@ input[type="text"], select {
 }
 .modal-content {
   background: white;
+  border: 2px solid #dceefa;
   padding: 2rem;
   border-radius: 12px;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 16px rgba(145, 201, 247, 0.25);
   display: flex;
   flex-direction: column;
   gap: 1rem;
   text-align: center;
+  color: #444;
 }
 .modal-content button {
   padding: 0.5rem 1rem;
@@ -312,6 +340,7 @@ input[type="text"], select {
   background-color: #6c757d;
   color: white;
 }
+
 .progress-bar-wrapper {
   margin-bottom: 1rem;
 }
@@ -322,8 +351,8 @@ input[type="text"], select {
   overflow: hidden;
 }
 .progress {
-  background-color: #28a745;
   height: 100%;
+  background: linear-gradient(to right, #f8c8dc, #91c9f7); /* ピンク→ブルー */
   transition: width 0.3s ease;
 }
 .progress-text {
@@ -331,6 +360,7 @@ input[type="text"], select {
   margin-top: 0.25rem;
   color: #555;
 }
+
 .goal-input-group {
   display: flex;
   gap: 0.5rem;
@@ -346,23 +376,13 @@ input[type="text"], select {
   font-size: 0.9rem;
   border: none;
   border-radius: 6px;
-  background-color: #6c757d;
+  background-color: #f8c8dc;
   color: white;
   cursor: pointer;
+  font-weight: bold;
 }
 .goal-input-group button:hover {
-  background-color: #5a6268;
+  background-color: #f4a9c4;
 }
-.card-section {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 2rem;
-  transition: box-shadow 0.3s ease;
-}
-.card-section:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 </style>
+
