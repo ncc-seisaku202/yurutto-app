@@ -1,0 +1,247 @@
+{
+  "moodRecords": [
+    {
+      "date": "2025-05-01",
+      "moodLevel": 3,
+      "mood": "まあまあ",
+      "gachaResult": "コーヒーを飲む",
+      "actionMemo": "温かいコーヒーでリラックスできました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250501_1",
+          "category": "mood",
+          "content": "今日は普通の一日でした。特に大きな変化はないけれど、平穏で良かったです。",
+          "timestamp": "2025-05-01T09:30:00Z"
+        },
+        {
+          "id": "memo_20250501_2",
+          "category": "gratitude",
+          "content": "朝のコーヒーが美味しくて、小さな幸せを感じました。",
+          "timestamp": "2025-05-01T10:15:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-02",
+      "moodLevel": 4,
+      "mood": "いけるかも",
+      "gachaResult": "散歩をする",
+      "actionMemo": "外の空気が気持ちよくて気分転換になりました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250502_1",
+          "category": "action",
+          "content": "散歩中に新しい道を発見しました。季節の変化を感じられて良かったです。",
+          "timestamp": "2025-05-02T16:20:00Z"
+        },
+        {
+          "id": "memo_20250502_2",
+          "category": "reflection",
+          "content": "運動することで気分が上がることを改めて実感しました。",
+          "timestamp": "2025-05-02T18:45:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-03",
+      "moodLevel": 2,
+      "mood": "しんどい",
+      "gachaResult": "音楽を聴く",
+      "actionMemo": "好きな音楽で少し心が軽くなりました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250503_1",
+          "category": "mood",
+          "content": "今日は少し疲れを感じました。でも音楽を聴いて少し楽になりました。",
+          "timestamp": "2025-05-03T14:30:00Z"
+        },
+        {
+          "id": "memo_20250503_2",
+          "category": "goal",
+          "content": "明日はもう少し早く寝て、体調を整えたいと思います。",
+          "timestamp": "2025-05-03T21:00:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-05",
+      "moodLevel": 5,
+      "mood": "とても良い",
+      "gachaResult": "友達と話す",
+      "actionMemo": "友達との会話で笑顔になれました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250505_1",
+          "category": "gratitude",
+          "content": "友達と久しぶりに話せて本当に嬉しかったです。笑いが絶えませんでした。",
+          "timestamp": "2025-05-05T15:30:00Z"
+        },
+        {
+          "id": "memo_20250505_2",
+          "category": "reflection",
+          "content": "人とのつながりの大切さを改めて感じた一日でした。",
+          "timestamp": "2025-05-05T20:15:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-07",
+      "moodLevel": 3,
+      "mood": "まあまあ",
+      "gachaResult": "本を読む",
+      "actionMemo": "集中して読書できて充実感がありました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250507_1",
+          "category": "action",
+          "content": "新しい本を読み始めました。興味深い内容で時間を忘れて読んでしまいました。",
+          "timestamp": "2025-05-07T13:45:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-10",
+      "moodLevel": 1,
+      "mood": "とてもしんどい",
+      "gachaResult": "深呼吸をする",
+      "actionMemo": "深呼吸で少し落ち着くことができました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250510_1",
+          "category": "mood",
+          "content": "今日はとても疲れていました。深呼吸をして少しずつ落ち着きを取り戻しました。",
+          "timestamp": "2025-05-10T11:20:00Z"
+        },
+        {
+          "id": "memo_20250510_2",
+          "category": "goal",
+          "content": "無理をせず、自分のペースで過ごすことを心がけたいです。",
+          "timestamp": "2025-05-10T19:30:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-12",
+      "moodLevel": 4,
+      "mood": "いけるかも",
+      "gachaResult": "ストレッチをする",
+      "actionMemo": "体を動かして血行が良くなりました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250512_1",
+          "category": "action",
+          "content": "朝のストレッチで体がスッキリしました。継続していきたいです。",
+          "timestamp": "2025-05-12T08:15:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-15",
+      "moodLevel": 3,
+      "mood": "まあまあ",
+      "gachaResult": "お茶を飲む",
+      "actionMemo": "ハーブティーでほっと一息つけました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250515_1",
+          "category": "gratitude",
+          "content": "ハーブティーの香りに癒されました。こういう小さな時間が大切ですね。",
+          "timestamp": "2025-05-15T15:45:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-18",
+      "moodLevel": 5,
+      "mood": "とても良い",
+      "gachaResult": "映画を見る",
+      "actionMemo": "感動的な映画で心が温かくなりました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250518_1",
+          "category": "reflection",
+          "content": "映画を見て感動しました。物語の力って本当にすごいですね。",
+          "timestamp": "2025-05-18T21:30:00Z"
+        },
+        {
+          "id": "memo_20250518_2",
+          "category": "gratitude",
+          "content": "今日は本当に良い一日でした。心が満たされています。",
+          "timestamp": "2025-05-18T22:15:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-05-20",
+      "moodLevel": 2,
+      "mood": "しんどい",
+      "gachaResult": "瞑想をする",
+      "actionMemo": "静かな時間で心を整えることができました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250520_1",
+          "category": "mood",
+          "content": "心が少し重たい一日でした。瞑想で少し楽になりました。",
+          "timestamp": "2025-05-20T17:00:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-06-01",
+      "moodLevel": 4,
+      "mood": "いけるかも",
+      "gachaResult": "朝の散歩",
+      "actionMemo": "朝の新鮮な空気で一日の始まりが良くなりました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250601_1",
+          "category": "action",
+          "content": "6月最初の日、朝の散歩で気持ちよくスタートできました。",
+          "timestamp": "2025-06-01T07:30:00Z"
+        },
+        {
+          "id": "memo_20250601_2",
+          "category": "goal",
+          "content": "今月も健康的な生活を心がけていきたいです。",
+          "timestamp": "2025-06-01T20:00:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-06-02",
+      "moodLevel": 3,
+      "mood": "まあまあ",
+      "gachaResult": "読書タイム",
+      "actionMemo": "新しい知識を得られて満足です",
+      "dailyMemos": [
+        {
+          "id": "memo_20250602_1",
+          "category": "reflection",
+          "content": "読書から新しい視点を得ることができました。学びは楽しいですね。",
+          "timestamp": "2025-06-02T14:20:00Z"
+        }
+      ]
+    },
+    {
+      "date": "2025-06-04",
+      "moodLevel": 2,
+      "mood": "しんどい",
+      "gachaResult": "温かいお風呂",
+      "actionMemo": "ゆっくりお風呂に入って疲れが取れました",
+      "dailyMemos": [
+        {
+          "id": "memo_20250604_1",
+          "category": "mood",
+          "content": "今日は疲れていましたが、お風呂でリフレッシュできました。",
+          "timestamp": "2025-06-04T19:45:00Z"
+        },
+        {
+          "id": "memo_20250604_2",
+          "category": "gratitude",
+          "content": "温かいお風呂に感謝。こういう時間が癒しになります。",
+          "timestamp": "2025-06-04T20:30:00Z"
+        }
+      ]
+    }
+  ]
+}
