@@ -63,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { moodOptions, moodMap } from '@/constants/moods'
 const emit = defineEmits(['mood-selected'])
@@ -76,6 +76,55 @@ const selectedLevel = ref(0)
 const showConfirm = ref(false)
 const isCompleted = ref(false)
 const completedMood = ref(null)
+
+function getTodayDateStr() {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
+async function checkMoodRecorded() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      const storedDate = localStorage.getItem('mood-recorded-date')
+      const submitted = localStorage.getItem('mood-submitted') === 'true'
+      if (storedDate === getTodayDateStr() || submitted) {
+        isCompleted.value = true
+        const localMood = JSON.parse(localStorage.getItem('last-mood'))
+        if (localMood) completedMood.value = localMood
+      }
+      return
+    }
+
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const { data, error } = await supabase
+      .from('moods')
+      .select('mood, mood_level')
+      .eq('user_id', user.id)
+      .gte('created_at', todayStart.toISOString())
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      throw error
+    }
+
+    if (data) {
+      isCompleted.value = true
+      const moodOption = moodOptions.find(o => o.label === data.mood)
+      if (moodOption) {
+        completedMood.value = {
+          label: data.mood,
+          value: moodOption.value,
+          color: moodOption.color
+        }
+      }
+    }
+  } catch (err) {
+    console.error('記録チェックエラー:', err.message)
+  }
+}
 
 function selectMood(option) {
   selectedMood.value = option.value
@@ -103,9 +152,8 @@ const handleKeydown = (event) => {
 }
 
 // マウント時にキーボードイベントリスナーを追加
-import { onMounted, onUnmounted } from 'vue'
-
 onMounted(() => {
+  checkMoodRecorded()
   document.addEventListener('keydown', handleKeydown)
 })
 
@@ -137,6 +185,15 @@ async function confirmMood() {
       }
     }
 
+    // ローカルストレージにも記録してリロード後に復元できるようにする
+    localStorage.setItem('mood-recorded-date', getTodayDateStr())
+    localStorage.setItem('last-mood', JSON.stringify({
+      label: selectedLabel.value,
+      value: selectedMood.value,
+      color: selectedColor.value
+    }))
+    localStorage.setItem('mood-submitted', 'true')
+
     // 完了状態を設定
     completedMood.value = {
       label: selectedLabel.value,
@@ -155,6 +212,7 @@ async function confirmMood() {
 
     showConfirm.value = false
     isCompleted.value = true
+    document.dispatchEvent(new Event('mood-recorded'))
   } catch (error) {
     console.error('予期しないエラー:', error)
     showConfirm.value = false
@@ -168,6 +226,9 @@ function resetSelection() {
   selectedColor.value = ''
   completedMood.value = null
   selectedLevel.value = 0
+  localStorage.removeItem('mood-recorded-date')
+  localStorage.removeItem('last-mood')
+  localStorage.removeItem('mood-submitted')
 }
 </script>
 
