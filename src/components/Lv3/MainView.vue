@@ -4,7 +4,7 @@
     <ActionGacha3 />
     <KuesutMove />
     <MoodChart />
-    <MoodCalendar />
+    <MoodCalendar3 />
     <NightModeToggle />
   </div>
 </template>
@@ -14,7 +14,7 @@ import MoodInput3 from './MoodInput3.vue'
 import ActionGacha3 from './ActionGacha3.vue'
 import KuesutMove from './KuesutMove.vue'
 import MoodChart from './MoodChart.vue'
-import MoodCalendar from '../Lv1/MoodCalendar.vue'
+import MoodCalendar3 from './MoodCalendar3.vue'
 </script>
 
 <style scoped>
