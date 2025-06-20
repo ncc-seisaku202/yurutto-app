@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
@@ -287,6 +287,11 @@ watch(currentDate, fetchMoodRecords, { immediate: true })
 
 onMounted(() => {
   // watchの immediate: true で初期ロードが実行されるため、ここは空でOK
+  document.addEventListener('mood-recorded', fetchMoodRecords)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mood-recorded', fetchMoodRecords)
 })
 </script>
 

@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
@@ -182,7 +182,7 @@ const closeModal = () => {
   selectedDayData.value = null
 }
 
-onMounted(async () => {
+const fetchMoodRecords = async () => {
   currentDate.value = new Date()
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -208,6 +208,17 @@ onMounted(async () => {
     date: entry.created_at.split('T')[0],
     moodLevel: entry.mood_level
   }))
+  
+  // 既に表示中なら再描画は自動で行われる
+}
+
+onMounted(async () => {
+  await fetchMoodRecords()
+  document.addEventListener('mood-recorded', fetchMoodRecords)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mood-recorded', fetchMoodRecords)
 })
 </script>
 

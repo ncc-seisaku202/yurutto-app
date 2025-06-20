@@ -97,7 +97,7 @@ const getGentleMessage = () => {
 const moodRecords = ref([])
 const moodRecordsRaw = ref([])
 
-onMounted(async () => {
+const fetchMoodRecords = async () => {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     console.error('ユーザー情報取得失敗:', userError)
@@ -125,7 +125,16 @@ onMounted(async () => {
     moodLevel: entry.mood_level
   }))
 
-  initChart()
+  if (chartInstance) {
+    updateChart()
+  } else {
+    initChart()
+  }
+}
+
+onMounted(async () => {
+  await fetchMoodRecords()
+  document.addEventListener('mood-recorded', fetchMoodRecords)
 })
 
 // コンポーネントがアンマウントされる時にチャートを破棄
@@ -133,6 +142,7 @@ onUnmounted(() => {
   if (chartInstance) {
     chartInstance.destroy()
   }
+  document.removeEventListener('mood-recorded', fetchMoodRecords)
 })
 
 // 期間変更

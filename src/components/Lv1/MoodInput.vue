@@ -108,7 +108,8 @@ async function checkMoodRecorded() {
     if (!user) {
       // ローカルストレージでフォールバック
       const storedDate = localStorage.getItem('mood-recorded-date')
-      if (storedDate === getTodayDateStr()) {
+      const submitted = localStorage.getItem('mood-submitted') === 'true'
+      if (storedDate === getTodayDateStr() || submitted) {
         isCompleted.value = true
         // 完了時の表示情報を復元
         const localMood = JSON.parse(localStorage.getItem('last-mood'))
@@ -198,6 +199,7 @@ async function confirmMood() {
     // ログイン状態に関わらずローカルストレージにも記録（フォールバック用）
     localStorage.setItem('mood-recorded-date', getTodayDateStr())
     localStorage.setItem('last-mood', JSON.stringify({ label: moodData.label, value: moodData.value, color: moodData.color }))
+    localStorage.setItem('mood-submitted', 'true')
 
 
     // 完了状態を設定
@@ -211,6 +213,7 @@ async function confirmMood() {
 
     showConfirm.value = false
     isCompleted.value = true
+    document.dispatchEvent(new Event('mood-recorded'))
 
   } catch (error) {
     console.error('予期しないエラー:', error)
@@ -223,6 +226,7 @@ async function confirmMood() {
 function resetMood() {
   localStorage.removeItem('mood-recorded-date')
   localStorage.removeItem('last-mood')
+  localStorage.removeItem('mood-submitted')
   isCompleted.value = false
   completedMood.value = null
   goBack()
