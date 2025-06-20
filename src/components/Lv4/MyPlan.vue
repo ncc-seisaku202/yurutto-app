@@ -96,6 +96,12 @@
   </div>
 </div>
 
+<!-- トースト通知 -->
+<div v-if="showToast" class="toast-notification">
+  ✅ 保存しました！
+</div>
+
+
   </div>
 </template>
 
@@ -112,6 +118,7 @@ const selectedStep = ref(null)
 const selectedIndex = ref(null)
 const isEditingStep = ref(false)
 const editedText = ref('')
+const showToast = ref(false)
 
 const toggleTitleEdit = () => {
   isEditingTitle.value = !isEditingTitle.value
@@ -172,6 +179,13 @@ const progressPercent = computed(() => {
   return Math.round((completedSteps.value / steps.value.length) * 100)
 })
 
+const triggerToast = () => {
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
+
 const savePlan = () => {
   const planData = {
     title: planTitle.value,
@@ -180,6 +194,7 @@ const savePlan = () => {
   }
   localStorage.setItem('myPlan', JSON.stringify(planData))
   console.log('保存しました:', planData)
+  triggerToast()
 }
 
 const loadPlan = () => {
@@ -410,6 +425,19 @@ input[type="text"], select {
 }
 .goal-input-group button:hover {
   background-color: #f4a9c4;
+}
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #28a745;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 2000;
+  font-weight: bold;
+  transition: opacity 0.3s ease;
 }
 </style>
 
