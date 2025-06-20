@@ -74,15 +74,34 @@
     </div>
 
     <!-- 詳細表示モーダル -->
-    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <h3>ステップの詳細</h3>
-        <p>{{ selectedStep?.text }}</p>
-        <p>状態: {{ selectedStep?.completed ? '完了' : '未完了' }}</p>
-        <button @click="deleteSelectedStep">このステップを削除</button>
-        <button @click="closeModal">閉じる</button>
+<div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+  <div class="modal-content">
+    <h3>ステップの詳細</h3>
+
+    <template v-if="!isEditingStep">
+      <p>{{ selectedStep?.text }}</p>
+      <p>状態: {{ selectedStep?.completed ? '完了' : '未完了' }}</p>
+      <button @click="isEditingStep = true">✏️ 編集する</button>
+      <button @click="deleteSelectedStep">このステップを削除</button>
+      <button @click="closeModal">閉じる</button>
+    </template>
+
+    <template v-else>
+      <input v-model="editedText" class="edit-input" placeholder="ステップを編集..." />
+      <div class="modal-buttons">
+        <button @click="saveEditedStep">保存する</button>
+        <button @click="isEditingStep = false">キャンセル</button>
       </div>
-    </div>
+    </template>
+  </div>
+</div>
+
+<!-- トースト通知 -->
+<div v-if="showToast" class="toast-notification">
+  ✅ 保存しました！
+</div>
+
+
   </div>
 </template>
 
@@ -97,6 +116,9 @@ const steps = ref([])
 const isModalOpen = ref(false)
 const selectedStep = ref(null)
 const selectedIndex = ref(null)
+const isEditingStep = ref(false)
+const editedText = ref('')
+const showToast = ref(false)
 
 const toggleTitleEdit = () => {
   isEditingTitle.value = !isEditingTitle.value
@@ -115,12 +137,15 @@ const openModal = (step, index) => {
   selectedStep.value = step
   selectedIndex.value = index
   isModalOpen.value = true
+  isEditingStep.value = false
+  editedText.value = step.text
 }
 
 const closeModal = () => {
   isModalOpen.value = false
   selectedStep.value = null
   selectedIndex.value = null
+  isEditingStep.value = false
 }
 
 const deleteSelectedStep = () => {
@@ -128,6 +153,14 @@ const deleteSelectedStep = () => {
     steps.value.splice(selectedIndex.value, 1)
     savePlan()
     closeModal()
+  }
+}
+
+const saveEditedStep = () => {
+  if (selectedIndex.value !== null && editedText.value.trim()) {
+    steps.value[selectedIndex.value].text = editedText.value.trim()
+    savePlan()
+    isEditingStep.value = false
   }
 }
 
@@ -146,6 +179,13 @@ const progressPercent = computed(() => {
   return Math.round((completedSteps.value / steps.value.length) * 100)
 })
 
+const triggerToast = () => {
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
+
 const savePlan = () => {
   const planData = {
     title: planTitle.value,
@@ -154,6 +194,7 @@ const savePlan = () => {
   }
   localStorage.setItem('myPlan', JSON.stringify(planData))
   console.log('保存しました:', planData)
+  triggerToast()
 }
 
 const loadPlan = () => {
@@ -174,6 +215,7 @@ onMounted(() => {
   loadPlan()
 })
 </script>
+
 
 <style scoped>
 @keyframes pop {
@@ -383,6 +425,19 @@ input[type="text"], select {
 }
 .goal-input-group button:hover {
   background-color: #f4a9c4;
+}
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #28a745;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 2000;
+  font-weight: bold;
+  transition: opacity 0.3s ease;
 }
 </style>
 
