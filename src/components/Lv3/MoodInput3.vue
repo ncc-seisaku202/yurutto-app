@@ -91,7 +91,8 @@ function getTodayDateStr() {
 
 function checkMoodRecorded() {
   const storedDate = localStorage.getItem('mood-recorded-date')
-  moodRecordedToday.value = storedDate === getTodayDateStr()
+  const submitted = localStorage.getItem('mood-submitted') === 'true'
+  moodRecordedToday.value = storedDate === getTodayDateStr() || submitted
 }
 
 function selectMood(option) {
@@ -112,6 +113,7 @@ function goBack() {
 
 function confirmMood() {
   localStorage.setItem('mood-recorded-date', getTodayDateStr())
+  localStorage.setItem('mood-submitted', 'true')
   moodRecordedToday.value = true
 
   emit('mood-selected', {
@@ -123,11 +125,13 @@ function confirmMood() {
   })
 
   goBack()
+  document.dispatchEvent(new Event('mood-recorded'))
 }
 
 // // 開発者ボタン
 function resetMood() {
   localStorage.removeItem('mood-recorded-date')
+  localStorage.removeItem('mood-submitted')
   moodRecordedToday.value = false
 }
 
