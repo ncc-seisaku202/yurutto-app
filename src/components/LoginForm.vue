@@ -1,8 +1,8 @@
 <template>
   <div class="login-container">
-    <div class="login-form">
-      <h2>ログイン</h2>
-      <form @submit.prevent="handleLogin">
+  <div class="login-form">
+      <h2>{{ isLogin ? 'ログイン' : '新規登録' }}</h2>
+      <form @submit.prevent="isLogin ? handleLogin() : handleSignup()">
         <div class="form-group">
           <label for="userId">メールアドレス</label>
           <input
@@ -31,9 +31,23 @@
         </div>
         
         <button type="submit" class="login-button" :disabled="isLoading">
-          {{ isLoading ? 'ログイン中...' : 'ログイン' }}
+          {{
+            isLoading
+              ? isLogin
+                ? 'ログイン中...'
+                : '登録中...'
+              : isLogin
+                ? 'ログイン'
+                : '登録'
+          }}
         </button>
       </form>
+      <div class="toggle-link">
+        <span>{{ isLogin ? 'アカウントをお持ちでないですか？' : 'すでにアカウントをお持ちですか？' }}</span>
+        <a href="#" @click.prevent="isLogin = !isLogin">
+          {{ isLogin ? '新規登録はこちら' : 'ログインはこちら' }}
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -48,6 +62,7 @@ const userId = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
+const isLogin = ref(true)
 
 const handleLogin = async () => {
   if (!userId.value || !password.value) {
@@ -80,6 +95,40 @@ const handleLogin = async () => {
   } catch (error) {
     console.error('予期しないエラー:', error)
     errorMessage.value = 'ログイン処理中にエラーが発生しました。'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleSignup = async () => {
+  if (!userId.value || !password.value) {
+    errorMessage.value = 'メールとパスワードを入力してください'
+    return
+  }
+
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: userId.value,
+      password: password.value,
+    })
+
+    if (error) {
+      console.error('登録エラー:', error)
+      errorMessage.value = '登録に失敗しました。'
+    } else {
+      console.log('登録成功:', data)
+      emit('login', {
+        userId: userId.value,
+        password: password.value,
+        user: data.user,
+      })
+    }
+  } catch (error) {
+    console.error('予期しないエラー:', error)
+    errorMessage.value = '登録処理中にエラーが発生しました。'
   } finally {
     isLoading.value = false
   }
@@ -184,5 +233,17 @@ input:focus {
 input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
+}
+
+.toggle-link {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.toggle-link a {
+  color: #667eea;
+  cursor: pointer;
+  margin-left: 0.25rem;
 }
 </style>
