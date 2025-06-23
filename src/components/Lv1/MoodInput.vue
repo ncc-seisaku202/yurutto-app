@@ -182,12 +182,14 @@ async function confirmMood() {
       // Supabaseにinsert（ログインしている場合のみ）
       const { error } = await supabase
         .from('moods')
-        .insert([{
-          // id: crypto.randomUUID(), // DB側で自動生成されるなら不要
-          user_id: user.id,
-          mood: moodData.label,
-          mood_level: moodMap[moodData.label]
-        }])
+        .insert([
+          {
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            mood: moodData.label,
+            mood_level: moodMap[moodData.label],
+          },
+        ])
 
       if (error) {
         throw new Error(`Supabaseへの保存に失敗: ${error.message}`)
