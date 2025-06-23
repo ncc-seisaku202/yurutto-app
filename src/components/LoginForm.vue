@@ -106,6 +106,11 @@ const handleSignup = async () => {
     return
   }
 
+  if (password.value.length < 6) {
+    errorMessage.value = 'パスワードは6文字以上で入力してください'
+    return
+  }
+
   isLoading.value = true
   errorMessage.value = ''
 
@@ -117,7 +122,7 @@ const handleSignup = async () => {
 
     if (error) {
       console.error('登録エラー:', error)
-      errorMessage.value = '登録に失敗しました。'
+      errorMessage.value = error.message || '登録に失敗しました。'
     } else {
       console.log('登録成功:', data)
       emit('login', {
