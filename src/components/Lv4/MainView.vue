@@ -6,6 +6,7 @@
     <!-- 新機能への導線 -->
     <div class="section">
       <MyPlan />
+      <ReflectionNote />
     </div>
 
     <!-- 既存流用コンポーネント -->
@@ -20,6 +21,7 @@
 <script setup>
 // Lv4新機能
 import MyPlan from './MyPlan.vue'
+import ReflectionNote from './ReflectionNote.vue' 
 
 // Lv1から再利用
 import MoodChart from '../Lv1/MoodChart.vue'
