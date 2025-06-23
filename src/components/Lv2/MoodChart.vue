@@ -113,7 +113,7 @@ const getGentleMessage = () => {
 const moodRecords = ref([])
 const moodRecordsRaw = ref([])
 
-onMounted(async () => {
+const fetchMoodRecords = async () => {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) {
     console.error('ユーザー情報取得失敗:', userError)
@@ -147,13 +147,23 @@ onMounted(async () => {
     // actionMemo: entry.action_memo
   }))
 
-  initChart()
+  if (chartInstance) {
+    updateChart()
+  } else {
+    initChart()
+  }
+}
+
+onMounted(async () => {
+  await fetchMoodRecords()
+  document.addEventListener('mood-recorded', fetchMoodRecords)
 })
 
 onUnmounted(() => {
   if (chartInstance) {
     chartInstance.destroy()
   }
+  document.removeEventListener('mood-recorded', fetchMoodRecords)
 })
 
 const changePeriod = (days) => {
