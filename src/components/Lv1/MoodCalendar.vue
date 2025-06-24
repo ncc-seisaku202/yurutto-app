@@ -54,10 +54,6 @@
               {{ getMoodText(selectedDayData.moodLevel) }}
             </div>
           </div>
-          <div class="gacha-info">
-            <h4>ガチャ結果</h4>
-            <p>{{ selectedDayData.gachaResult }}</p>
-          </div>
         </div>
       </div>
     </div>
