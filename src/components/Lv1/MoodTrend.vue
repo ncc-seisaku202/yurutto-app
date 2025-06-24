@@ -1,6 +1,7 @@
 <template>
   <div>
     <h2>気分の履歴</h2>
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     <ul>
       <li v-for="mood in moods" :key="mood.id">
         {{ mood.created_at }} - {{ mood.mood }}
@@ -14,6 +15,7 @@ import { ref, onMounted } from 'vue'
 import { supabase, buildRestHeaders } from '@/lib/supabase'
 
 const moods = ref([])
+const errorMessage = ref('')
 
 onMounted(async () => {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
@@ -75,6 +77,15 @@ onMounted(async () => {
 
   try {
     const response = await fetch(url, { headers })
+    if (!response.ok) {
+      console.error(
+        '🟥 REST APIエラー:',
+        response.status,
+        response.statusText
+      )
+      errorMessage.value = `エラー: ${response.status} ${response.statusText}`
+      return
+    }
     const result = await response.json()
 
     console.log('🟢 REST APIからのレスポンス:', result)
@@ -87,4 +98,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.error {
+  color: red;
+}
 </style>
