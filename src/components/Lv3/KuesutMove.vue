@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <!-- ヘッダー -->
-    <h1 class="title">🎯 マイプラン</h1>
+    <h1 class="title">自分だけのクエストに挑戦しよう！</h1>
 
     <!-- 目標名 -->
     <div class="row">
@@ -92,51 +92,72 @@ export default {
 
 <style scoped>
 .container {
-  max-width: 600px;
-  margin: 2rem auto;
+  max-width: 400px;
+  margin: 3rem auto;
   padding: 2rem;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   font-family: sans-serif;
-  background-color: #fff;
-  border-radius: 12px;
 }
 
-.title {
-  font-size: 1.4rem;
+h1 {
+  font-size: 1.5rem;
   font-weight: bold;
+  text-align: center;
   margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  gap: 0.5rem;
+/* ラベルと入力欄の縦並び */
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: bold;
+  color: #222;
 }
 
 input,
-select {
-  flex: 1;
+select,
+textarea {
+  width: 100%;
   padding: 0.6rem;
   font-size: 1rem;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
 }
 
+/* ボタン共通 */
 button {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
-  background-color: #aaa;
+  display: block;
+  width: 100%;
+  background-color: #666;
   color: white;
   border: none;
-  border-radius: 6px;
+  padding: 0.75rem;
+  font-weight: bold;
+  border-radius: 8px;
   cursor: pointer;
-  white-space: nowrap;
+  margin-bottom: 1rem;
+}
+button:hover {
+  background-color: #444;
 }
 
-button:hover {
-  background-color: #888;
+/* ごほうびボタン */
+.reward-button {
+  background-color: #facc15;
+  color: black;
+  margin-top: 1rem;
+}
+
+.feedback {
+  background-color: #e6ffed;
+  border: 1px solid #66bb6a;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 2rem;
+  text-align: center;
 }
 </style>
