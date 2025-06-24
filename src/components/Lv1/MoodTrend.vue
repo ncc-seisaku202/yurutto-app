@@ -24,8 +24,6 @@ onMounted(async () => {
     return
   }
 
-  const user = session.user
-  
   try {
     const { data, error } = await supabase
       .from('moods')
@@ -60,10 +58,20 @@ onMounted(async () => {
   const accessToken = session.access_token
   console.log('🟡 アクセストークン:', accessToken)
 
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods`
+  const user = session.user
+  const createdAfter = new Date('2025-06-23T15:00:00.000Z')
+
+  const params = new URLSearchParams({
+    select: 'mood,mood_level',
+    user_id: `eq.${user.id}`,
+    created_at: `gte.${createdAfter.toISOString()}`,
+  })
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods?${params.toString()}`
   const headers = {
     apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
     Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/json',
   }
 
   console.log('🟡 リクエストURL:', url)
