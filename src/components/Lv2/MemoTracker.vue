@@ -56,7 +56,6 @@
             class="memo-item"
           >
             <div class="memo-header">
-              <span class="memo-category">{{ getCategoryEmoji(memo.category) }} {{ getCategoryLabel(memo.category) }}</span>
               <span class="memo-time">{{ formatTime(memo.timestamp) }}</span>
             </div>
             <p class="memo-content">{{ memo.content }}</p>
@@ -95,14 +94,6 @@ const selectedCategory = ref('mood')
 const memoSaved = ref(false)
 const todayMemos = ref([])
 
-// メモカテゴリ
-const memoCategories = ref([
-  { value: 'mood', label: '気分', emoji: '😊' },
-  { value: 'action', label: '行動', emoji: '🎯' },
-  { value: 'reflection', label: '振り返り', emoji: '💭' },
-  { value: 'gratitude', label: '感謝', emoji: '🙏' },
-  { value: 'goal', label: '目標', emoji: '⭐' }
-])
 
 // プレースホルダーテキストを取得
 const getPlaceholderText = () => {
@@ -114,18 +105,6 @@ const getPlaceholderText = () => {
     goal: '明日の目標や今後やりたいことを記録してみましょう'
   }
   return placeholders[selectedCategory.value] || '自由にメモを書いてください'
-}
-
-// カテゴリの絵文字を取得
-const getCategoryEmoji = (category) => {
-  const categoryData = memoCategories.value.find(c => c.value === category)
-  return categoryData ? categoryData.emoji : '📝'
-}
-
-// カテゴリのラベルを取得
-const getCategoryLabel = (category) => {
-  const categoryData = memoCategories.value.find(c => c.value === category)
-  return categoryData ? categoryData.label : 'メモ'
 }
 
 // 時刻をフォーマット
