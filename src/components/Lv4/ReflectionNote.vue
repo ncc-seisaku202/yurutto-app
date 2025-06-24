@@ -5,7 +5,7 @@
     <!-- 質問1 -->
     <div class="question-block">
       <p class="question-text">1. この1週間を一言で表すと？</p>
-      <div class="options">
+      <div class="options horizontal">
         <label><input type="radio" name="q1" /> すっきり</label>
         <label><input type="radio" name="q1" /> もやもや</label>
         <label><input type="radio" name="q1" /> 忙しかった</label>
@@ -16,7 +16,7 @@
     <!-- 質問2 -->
     <div class="question-block">
       <p class="question-text">2. よくできたことはありましたか？</p>
-      <div class="options">
+      <div class="options horizontal">
         <label><input type="radio" name="q2" /> できた</label>
         <label><input type="radio" name="q2" /> 少しできた</label>
         <label><input type="radio" name="q2" /> あまりできなかった</label>
@@ -26,14 +26,14 @@
     <!-- 質問3 -->
     <div class="question-block">
       <p class="question-text">3. 来週の気持ちは？</p>
-      <div class="options">
+      <div class="options horizontal">
         <label><input type="radio" name="q3" /> 楽しみ</label>
         <label><input type="radio" name="q3" /> 不安</label>
         <label><input type="radio" name="q3" /> 変化なし</label>
       </div>
     </div>
 
-    <!-- 保存ボタン（現状は非活性） -->
+    <!-- 保存ボタン（準備中） -->
     <div class="button-wrapper">
       <button disabled>保存（準備中）</button>
     </div>
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-// 現段階ではロジックなし
+// UIのみ。ロジックなし
 </script>
 
 <style scoped>
@@ -50,7 +50,8 @@
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  max-width: 640px; /* ✅ MyPlanと同じ幅 */
+  width: 100%;
+  max-width: 640px; /* ✅ MyPlan.vueと揃える */
   margin: 2rem auto;
 }
 
@@ -73,18 +74,29 @@
 
 .options {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding-left: 1rem;
+  flex-wrap: wrap; /* ✅ 折り返し対応 */
+  gap: 0.8rem 1.2rem;
+  padding-left: 0.5rem;
 }
 
-.options label {
+.options.horizontal label {
+  display: flex;
+  align-items: center;
   font-weight: normal;
   color: #444;
+  background: #eef4fa;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.options.horizontal label:hover {
+  background-color: #dde8f5;
 }
 
 input[type='radio'] {
-  margin-right: 0.5rem;
+  margin-right: 0.4rem;
 }
 
 .button-wrapper {
