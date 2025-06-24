@@ -54,6 +54,10 @@
               {{ getMoodText(selectedDayData.moodLevel) }}
             </div>
           </div>
+          <div class="gacha-info">
+            <h4>ガチャ結果</h4>
+            <p>{{ selectedDayData.gachaResult }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -61,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
@@ -178,7 +182,7 @@ const closeModal = () => {
   selectedDayData.value = null
 }
 
-const fetchMoodRecords = async () => {
+onMounted(async () => {
   currentDate.value = new Date()
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -204,17 +208,6 @@ const fetchMoodRecords = async () => {
     date: entry.created_at.split('T')[0],
     moodLevel: entry.mood_level
   }))
-  
-  // 既に表示中なら再描画は自動で行われる
-}
-
-onMounted(async () => {
-  await fetchMoodRecords()
-  document.addEventListener('mood-recorded', fetchMoodRecords)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mood-recorded', fetchMoodRecords)
 })
 </script>
 
