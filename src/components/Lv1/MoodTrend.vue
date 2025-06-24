@@ -11,7 +11,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { supabase } from '@/lib/supabase'
+import { supabase, buildRestHeaders } from '@/lib/supabase'
 
 const moods = ref([])
 
@@ -68,11 +68,7 @@ onMounted(async () => {
   })
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods?${params.toString()}`
-  const headers = {
-    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${accessToken}`,
-    Accept: 'application/json',
-  }
+  const headers = buildRestHeaders(accessToken)
 
   console.log('🟡 リクエストURL:', url)
   console.log('🟡 リクエストヘッダー:', headers)
