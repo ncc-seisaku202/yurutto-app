@@ -1,37 +1,73 @@
 <template>
-  <div class="container">
-    <!-- ヘッダー -->
-    <h1 class="title">🎯 マイプラン</h1>
+  <div class="p-4 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">クエスト作成</h1>
 
-    <!-- 目標名 -->
-    <div class="row">
-      <input type="text" v-model="quest.name" placeholder="例: 朝の散歩を習慣にする" />
-      <button @click="confirmGoal">確定</button>
-    </div>
-
-    <!-- 期間 -->
-    <div class="row">
-      <select v-model="quest.duration">
-        <option disabled value="">選択してください</option>
-        <option>7日間</option>
-        <option>14日間</option>
-        <option>30日間</option>
+    <!-- テンプレート選択 -->
+    <div class="mb-4">
+      <label class="block mb-1">テンプレート選択:</label>
+      <select v-model="selectedTemplateId" @change="applyTemplate" class="border rounded p-2 w-full">
+        <option disabled value="">テンプレートを選んでください</option>
+        <option v-for="template in templates" :key="template.id" :value="template.id">
+          {{ template.name }}
+        </option>
       </select>
     </div>
 
-    <!-- ステップを追加 -->
-    <div class="row">
-      <input type="text" v-model="newStep" placeholder="例: 毎朝7時に起きる" />
-      <button @click="addStep">追加して保存</button>
+    <!-- クエスト作成フォーム -->
+    <div class="space-y-4">
+      <div>
+        <label class="block">クエスト名</label>
+        <input v-model="quest.name" class="border p-2 w-full rounded" placeholder="例: 毎日早起きチャレンジ" />
+      </div>
+      <div>
+        <label class="block">期間</label>
+        <input v-model="quest.duration" type="text" class="border p-2 w-full rounded" placeholder="例: 7日間" />
+      </div>
+      <div>
+        <label class="block">内容メモ</label>
+        <textarea v-model="quest.memo" class="border p-2 w-full rounded" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
+      </div>
+      <div>
+        <label class="block">難易度</label>
+        <select v-model="quest.difficulty" class="border p-2 w-full rounded">
+          <option disabled value="">選択してください</option>
+          <option>簡単</option>
+          <option>普通</option>
+          <option>難しい</option>
+        </select>
+      </div>
+      <div>
+        <label class="block">ごほうび設定</label>
+        <input v-model="quest.reward" class="border p-2 w-full rounded" placeholder="例: ケーキを食べる！" />
+      </div>
+    </div>
+
+    <!-- クエスト進捗 -->
+    <div class="mt-6">
+      <label class="block mb-2">進捗管理</label>
+      <button @click="toggleCompletion" class="px-4 py-2 bg-blue-500 text-white rounded">
+        {{ quest.completed ? '達成済み ✔' : '未達成' }}
+      </button>
+    </div>
+
+    <!-- 達成時フィードバック -->
+    <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
+      <h2 class="font-bold text-lg text-green-800">🎉 クエスト達成！</h2>
+      <p>経験値 +100</p>
+      <p>祝福メッセージ: よくがんばりました！</p>
+      <div class="mt-2">
+        <button @click="claimReward" class="bg-yellow-400 px-4 py-2 rounded font-bold">
+          🎁 ごほうびゲット！
+        </button>
+        <p v-if="rewardClaimed" class="mt-2 text-sm">ごほうび: {{ quest.reward }}</p>
+      </div>
     </div>
   </div>
 </template>
 
-
-
 <script>
 export default {
-  name: 'KuesutMove',
+  name: 'Kuesut',
   data() {
     return {
       quest: {
@@ -91,52 +127,78 @@ export default {
 </script>
 
 <style scoped>
+/* optional styling */
+</style>
+
+
+<style scoped>
 .container {
-  max-width: 600px;
-  margin: 2rem auto;
+  max-width: 400px;
+  margin: 3rem auto;
   padding: 2rem;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   font-family: sans-serif;
-  background-color: #fff;
-  border-radius: 12px;
 }
 
-.title {
-  font-size: 1.4rem;
+h1 {
+  font-size: 1.5rem;
   font-weight: bold;
+  text-align: center;
   margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  gap: 0.5rem;
+/* ラベルと入力欄の縦並び */
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: bold;
+  color: #222;
 }
 
 input,
-select {
-  flex: 1;
+select,
+textarea {
+  width: 100%;
   padding: 0.6rem;
   font-size: 1rem;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
 }
 
+/* ボタン共通 */
 button {
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
-  background-color: #aaa;
+  display: block;
+  width: 100%;
+  background-color: #666;
   color: white;
   border: none;
-  border-radius: 6px;
+  padding: 0.75rem;
+  font-weight: bold;
+  border-radius: 8px;
   cursor: pointer;
-  white-space: nowrap;
+  margin-bottom: 1rem;
+}
+button:hover {
+  background-color: #444;
 }
 
-button:hover {
-  background-color: #888;
+/* ごほうびボタン */
+.reward-button {
+  background-color: #facc15;
+  color: black;
+  margin-top: 1rem;
+}
+
+.feedback {
+  background-color: #e6ffed;
+  border: 1px solid #66bb6a;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 2rem;
+  text-align: center;
 }
 </style>
