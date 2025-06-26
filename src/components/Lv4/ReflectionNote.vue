@@ -3,8 +3,8 @@
     <h2 class="section-title">📝 ふりかえりノート</h2>
 
     <!-- 質問1 -->
-    <div class="question-block">
-      <p class="question-text">1. この1週間を一言で表すと？</p>
+    <div class="question-block q1">
+      <p class="question-text">🌀 この1週間を一言で表すと？</p>
       <div class="options horizontal">
         <label><input type="radio" name="q1" /> すっきり</label>
         <label><input type="radio" name="q1" /> もやもや</label>
@@ -14,8 +14,8 @@
     </div>
 
     <!-- 質問2 -->
-    <div class="question-block">
-      <p class="question-text">2. よくできたことはありましたか？</p>
+    <div class="question-block q2">
+      <p class="question-text">💪 よくできたことはありましたか？</p>
       <div class="options horizontal">
         <label><input type="radio" name="q2" /> できた</label>
         <label><input type="radio" name="q2" /> 少しできた</label>
@@ -24,8 +24,8 @@
     </div>
 
     <!-- 質問3 -->
-    <div class="question-block">
-      <p class="question-text">3. 来週の気持ちは？</p>
+    <div class="question-block q3">
+      <p class="question-text">🔮 来週の気持ちは？</p>
       <div class="options horizontal">
         <label><input type="radio" name="q3" /> 楽しみ</label>
         <label><input type="radio" name="q3" /> 不安</label>
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <!-- 保存ボタン（準備中） -->
+    <!-- 保存ボタン -->
     <div class="button-wrapper">
       <button disabled>保存（準備中）</button>
     </div>
@@ -51,7 +51,7 @@
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 640px; /* ✅ MyPlan.vueと揃える */
+  max-width: 640px;
   margin: 2rem auto;
 }
 
@@ -64,6 +64,20 @@
 
 .question-block {
   margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+/* 背景色つきブロック */
+.question-block.q1 {
+  background-color: #e6f2ff;
+}
+.question-block.q2 {
+  background-color: #f9f1ff;
+}
+.question-block.q3 {
+  background-color: #fff3f3;
 }
 
 .question-text {
@@ -74,7 +88,7 @@
 
 .options {
   display: flex;
-  flex-wrap: wrap; /* ✅ 折り返し対応 */
+  flex-wrap: wrap;
   gap: 0.8rem 1.2rem;
   padding-left: 0.5rem;
 }
