@@ -17,83 +17,54 @@ import { supabase, buildRestHeaders } from '@/lib/supabase'
 const moods = ref([])
 const errorMessage = ref('')
 
+// コンポーネントがマウントされたときの処理を一つにまとめる
 onMounted(async () => {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  const session = sessionData.session
-
-  if (!session || sessionError) {
-    console.error('ログインセッションがありません')
-    return
-  }
-
   try {
-    const { data, error } = await supabase
-      .from('moods')
-      .select('*')
+    // 1. ログインセッションを取得して存在を確認
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    const session = sessionData?.session
 
-    console.log('クエリ実行完了 - data:', data, 'error:', error)
+    if (sessionError || !session) {
+      errorMessage.value = 'ログインセッションがありません'
+      return
+    }
+
+    // 2. Supabaseのテーブルから気分一覧を取得
+    const { data, error } = await supabase.from('moods').select('*')
 
     if (error) {
-      console.error('moods取得失敗:', error)
-      console.error('エラー詳細:', JSON.stringify(error, null, 2))
-    } else {
-      moods.value = data
-      console.log('取得成功！データ件数:', data?.length || 0)
-      console.log('データ内容:', data)
+      errorMessage.value = '気分データの取得に失敗しました'
+      return
     }
-  } catch (catchError) {
-    console.error('予期しないエラー:', catchError)
-  }
-})
+    moods.value = data
 
-onMounted(async () => {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  const session = sessionData?.session
+    // 3. REST APIで気分データを取得（例として mood と mood_level のみ）
+    const user = session.user
+    const accessToken = session.access_token
+    const createdAfter = new Date('2025-06-23T15:00:00.000Z')
 
-  console.log('🟡 セッション取得:', session)
+    const params = new URLSearchParams({
+      select: 'mood,mood_level',
+      user_id: `eq.${user.id}`,
+      created_at: `gte.${createdAfter.toISOString()}`,
+    })
 
-  if (!session || sessionError) {
-    console.error('🔴 セッション取得失敗:', sessionError)
-    return
-  }
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods?${params.toString()}`
+    const headers = buildRestHeaders(accessToken)
 
-  const accessToken = session.access_token
-  console.log('🟡 アクセストークン:', accessToken)
-
-  const user = session.user
-  const createdAfter = new Date('2025-06-23T15:00:00.000Z')
-
-  const params = new URLSearchParams({
-    select: 'mood,mood_level',
-    user_id: `eq.${user.id}`,
-    created_at: `gte.${createdAfter.toISOString()}`,
-  })
-
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods?${params.toString()}`
-  const headers = buildRestHeaders(accessToken)
-
-  console.log('🟡 リクエストURL:', url)
-  console.log('🟡 リクエストヘッダー:', headers)
-
-  try {
     const response = await fetch(url, { headers })
     if (!response.ok) {
-      console.error(
-        '🟥 REST APIエラー:',
-        response.status,
-        response.statusText
-      )
       errorMessage.value = `エラー: ${response.status} ${response.statusText}`
       return
     }
-    const result = await response.json()
 
-    console.log('🟢 REST APIからのレスポンス:', result)
-  } catch (error) {
-    console.error('🔴 fetch中にエラー:', error)
+    await response.json()
+  } catch (err) {
+    // まとめてエラー処理
+    errorMessage.value = 'データ取得中にエラーが発生しました'
+    console.error(err)
   }
 })
-
 
 </script>
 
