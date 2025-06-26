@@ -38,27 +38,24 @@ onMounted(async () => {
     }
     moods.value = data
 
-    // 3. REST APIで気分データを取得（例として mood と mood_level のみ）
+    // 3. mood と mood_level のみ取得する例 (REST fetch を supabase-js に変更)
     const user = session.user
-    const accessToken = session.access_token
     const createdAfter = new Date('2025-06-23T15:00:00.000Z')
 
-    const params = new URLSearchParams({
-      select: 'mood,mood_level',
-      user_id: `eq.${user.id}`,
-      created_at: `gte.${createdAfter.toISOString()}`,
-    })
+    const { data: moodData, error: moodError } = await supabase
+      .from('moods')
+      .select('mood, mood_level')
+      .eq('user_id', user.id)
+      .gte('created_at', createdAfter.toISOString())
 
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/moods?${params.toString()}`
-    const headers = buildRestHeaders(accessToken)
-
-    const response = await fetch(url, { headers })
-    if (!response.ok) {
-      errorMessage.value = `エラー: ${response.status} ${response.statusText}`
+    if (moodError) {
+      errorMessage.value = 'moodデータの取得に失敗しました'
+      console.error(moodError)
       return
     }
 
-    await response.json()
+    // 必要であれば取得したデータを利用
+    console.log('Filtered moods:', moodData)
   } catch (err) {
     // まとめてエラー処理
     errorMessage.value = 'データ取得中にエラーが発生しました'
