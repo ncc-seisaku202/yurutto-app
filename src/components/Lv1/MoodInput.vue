@@ -126,7 +126,7 @@ async function checkMoodRecorded() {
       .select('mood, mood_level')
       .eq('user_id', user.id)
       .gte('created_at', todayStart.toISOString())
-      .single() // 今日は1件のはずなのでsingle()でOK
+      .maybeSingle()
 
     if (error && error.code !== 'PGRST116') { // PGRST116は「行が見つからない」エラーなので無視
       throw error

@@ -4,7 +4,6 @@
     <ActionGacha />
     <MoodChart />
     <MoodCalendar />
-    <MoodTrend />
     <NightModeToggle />
   </div>
 </template>
@@ -14,7 +13,6 @@ import MoodInput from './MoodInput.vue'
 import ActionGacha from './ActionGacha.vue'
 import MoodChart from './MoodChart.vue'
 import MoodCalendar from './MoodCalendar.vue'
-import MoodTrend from './MoodTrend.vue'
 import NightModeToggle from './NightModeToggle.vue'
 </script>
 
