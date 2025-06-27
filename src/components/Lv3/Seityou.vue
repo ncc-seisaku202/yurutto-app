@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import budImg from '@/assets/bud.png';
+import budImg from '@/assets/bug.png';
 import saplingImg from '@/assets/sapling.png';
 import youngTreeImg from '@/assets/young_tree.png';
 import bigTreeImg from '@/assets/big_tree.png';
