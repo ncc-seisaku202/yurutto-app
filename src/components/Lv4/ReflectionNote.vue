@@ -2,58 +2,84 @@
   <div class="reflection-note">
     <h2 class="section-title">📝 ふりかえりノート</h2>
 
-    <!-- 質問1 -->
+    <!-- Q1 -->
     <div class="question-block q1 animated">
       <p class="question-text">🌀 この1週間をひとことで表すと、どんな感じだったかな？</p>
       <div class="options horizontal">
-        <label><input type="radio" name="q1" /> すっきり</label>
-        <label><input type="radio" name="q1" /> もやもや</label>
-        <label><input type="radio" name="q1" /> 忙しかった</label>
-        <label><input type="radio" name="q1" /> 穏やか</label>
+        <label><input type="radio" value="すっきり" v-model="answers.q1" /> すっきり</label>
+        <label><input type="radio" value="もやもや" v-model="answers.q1" /> もやもや</label>
+        <label><input type="radio" value="忙しかった" v-model="answers.q1" /> 忙しかった</label>
+        <label><input type="radio" value="穏やか" v-model="answers.q1" /> 穏やか</label>
       </div>
     </div>
 
-    <!-- 質問2 -->
+    <!-- Q2 -->
     <div class="question-block q2 animated">
       <p class="question-text">💪 今週、自分をちょっとほめられることはあった？</p>
       <div class="options horizontal">
-        <label><input type="radio" name="q2" /> できた！</label>
-        <label><input type="radio" name="q2" /> 少しできた</label>
-        <label><input type="radio" name="q2" /> あまりできなかった</label>
+        <label><input type="radio" value="できた！" v-model="answers.q2" /> できた！</label>
+        <label><input type="radio" value="少しできた" v-model="answers.q2" /> 少しできた</label>
+        <label><input type="radio" value="あまりできなかった" v-model="answers.q2" /> あまりできなかった</label>
       </div>
     </div>
 
-    <!-- 質問3 -->
+    <!-- Q3 -->
     <div class="question-block q3 animated">
       <p class="question-text">🔮 来週はどんな気持ちで過ごしたい？</p>
       <div class="options horizontal">
-        <label><input type="radio" name="q3" /> 楽しみ</label>
-        <label><input type="radio" name="q3" /> ちょっと不安</label>
-        <label><input type="radio" name="q3" /> のんびり</label>
+        <label><input type="radio" value="楽しみ" v-model="answers.q3" /> 楽しみ</label>
+        <label><input type="radio" value="ちょっと不安" v-model="answers.q3" /> ちょっと不安</label>
+        <label><input type="radio" value="のんびり" v-model="answers.q3" /> のんびり</label>
       </div>
     </div>
 
-    <!-- 質問4（自由記述） -->
+    <!-- Q4 -->
     <div class="question-block q4 animated">
       <p class="question-text">🌱 気になったことや感じたこと、ちょこっとでも自由に書いてみませんか？（書かなくても大丈夫です）</p>
       <div class="textarea-wrapper">
-        <textarea placeholder="例：久しぶりに朝の空気をゆっくり感じられて、気持ちよかったな〜。"></textarea>
+        <textarea
+          v-model="answers.q4"
+          placeholder="例：久しぶりに朝の空気をゆっくり感じられて、気持ちよかったな〜。"
+        ></textarea>
       </div>
     </div>
 
     <!-- 保存ボタン -->
     <div class="button-wrapper">
-      <button disabled>あとで保存できるようにします</button>
+      <button @click="saveToLocal">保存する</button>
     </div>
   </div>
 </template>
 
 <script setup>
-// UIのみ。ロジックなし
+import { ref, onMounted } from 'vue'
+
+const answers = ref({
+  q1: '',
+  q2: '',
+  q3: '',
+  q4: '',
+})
+
+const saveToLocal = () => {
+  localStorage.setItem('reflectionNote', JSON.stringify(answers.value))
+  alert('保存しました！')
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem('reflectionNote')
+  if (saved) {
+    try {
+      answers.value = JSON.parse(saved)
+    } catch (e) {
+      console.warn('保存データの読み込みに失敗しました', e)
+    }
+  }
+})
 </script>
 
 <style scoped>
-/* 全体レイアウト */
+/* 以下、UI用のスタイルはすべて以前のものを維持 */
 .reflection-note {
   background: #fdfdfd;
   border-radius: 12px;
@@ -63,16 +89,12 @@
   max-width: 640px;
   margin: 2rem auto;
 }
-
-/* タイトル */
 .section-title {
   font-size: 1.6rem;
   font-weight: bold;
   margin-bottom: 1.5rem;
   color: #003366;
 }
-
-/* 各質問ブロック */
 .question-block {
   margin-bottom: 2rem;
   padding: 1rem;
@@ -81,7 +103,6 @@
   transform: translateY(20px);
   animation: fadeInUp 0.6s ease forwards;
 }
-
 .question-block.q1 { background-color: #e6f2ff; animation-delay: 0s; }
 .question-block.q2 { background-color: #f9f1ff; animation-delay: 0.1s; }
 .question-block.q3 { background-color: #fff3f3; animation-delay: 0.2s; }
@@ -90,30 +111,23 @@
   animation-delay: 0.3s;
   padding-bottom: 1.5rem;
 }
-
-/* アニメーション */
 @keyframes fadeInUp {
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
-/* 質問テキスト */
 .question-text {
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #333;
 }
-
-/* 選択肢 */
 .options {
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem 1.2rem;
   padding-left: 0.5rem;
 }
-
 .options.horizontal label {
   display: flex;
   align-items: center;
@@ -128,12 +142,9 @@
 .options.horizontal label:hover {
   background-color: #dde8f5;
 }
-
 input[type='radio'] {
   margin-right: 0.4rem;
 }
-
-/* 自由記述欄 */
 .textarea-wrapper {
   max-width: 95%;
   margin: 0 auto;
@@ -148,21 +159,18 @@ textarea {
   resize: vertical;
   background-color: #fff;
 }
-
-/* 保存ボタン */
 .button-wrapper {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
 }
-
 button {
   padding: 0.6rem 1.2rem;
   font-size: 1rem;
-  background-color: #aaa;
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 </style>
