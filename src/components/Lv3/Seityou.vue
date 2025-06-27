@@ -29,7 +29,7 @@ export default {
     },
   },
   data() {
-    return { budImg, saplingImg, youngTreeImg, bigTreeImg };
+    return { bugImg, saplingImg, youngTreeImg, bigTreeImg };
   },
 };
 </script>
