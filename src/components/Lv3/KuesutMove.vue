@@ -77,7 +77,16 @@ export default {
   components: { Seityou },
   data() {
     return {
-      …（既存の data はそのまま）…
+       quest: {
+        name: '',
+        duration: '',
+        memo: '',
+        difficulty: '',
+        reward: '',
+        completed: false,
+      },
+      rewardClaimed: false,
+      selectedTemplateId: '',
       totalExp: 0,
     };
   },
