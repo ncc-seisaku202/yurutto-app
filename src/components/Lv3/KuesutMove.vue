@@ -66,8 +66,13 @@
 </template>
 
 <script>
+import Seityou from './Seityou.vue';
+
 export default {
   name: 'Kuesut',
+  components: {
+    Seityou,
+  },
   data() {
     return {
       quest: {
@@ -80,6 +85,7 @@ export default {
       },
       rewardClaimed: false,
       selectedTemplateId: '',
+      totalExp: 0, // ← 累積経験値を追加
       templates: [
         {
           id: 'template1',
@@ -115,7 +121,10 @@ export default {
     },
     toggleCompletion() {
       this.quest.completed = !this.quest.completed;
-      if (!this.quest.completed) {
+      if (this.quest.completed) {
+        this.totalExp += 100; // ← 経験値を加算（例: 毎回100）
+      } else {
+        this.totalExp -= 100; // ← クエスト未達成に戻す場合
         this.rewardClaimed = false;
       }
     },
@@ -125,6 +134,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 /* optional styling */
