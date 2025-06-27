@@ -50,6 +50,11 @@
       </button>
     </div>
 
+    <!-- 累計経験値で木を成長表示 -->
+    <div class="mt-10 flex justify-center">
+      <!-- ★ ここで合計経験値を渡す ★ -->
+      <Seityou :exp="totalExp" />
+    </div>
     <!-- 達成時フィードバック -->
     <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
       <h2 class="font-bold text-lg text-green-800">🎉 クエスト達成！</h2>
@@ -67,6 +72,25 @@
 
 <script>
 import Seityou from './Seityou.vue';
+export default {
+  name: 'Kuesut',
+  components: { Seityou },
+  data() {
+    return {
+      …（既存の data はそのまま）…
+      totalExp: 0,
+    };
+  },
+  methods: {
+    toggleCompletion() {
+      this.quest.completed = !this.quest.completed;
+      if (this.quest.completed) {
+        this.totalExp += 100;           // クエスト達成で経験値加算
+      } else {
+        this.totalExp = Math.max(0, this.totalExp - 100); // 取り消し時は減算
+        this.rewardClaimed = false;
+      }
+    },
 
 export default {
   name: 'Kuesut',
@@ -131,6 +155,8 @@ export default {
     claimReward() {
       this.rewardClaimed = true;
     },
+  },
+};
   },
 };
 </script>
