@@ -38,23 +38,6 @@
         </div>
       </div>
       
-      <!-- 今日のメモ表示エリア -->
-      <div class="today-memos" v-if="todayMemos.length > 0">
-        <h3 class="today-title">今日のメモ一覧</h3>
-        <div class="memo-list">
-          <div
-            v-for="memo in todayMemos"
-            :key="memo.id"
-            class="memo-item"
-          >
-            <div class="memo-header">
-              <span class="memo-time">{{ formatTime(memo.created_at) }}</span>
-            </div>
-            <p class="memo-content">{{ memo.content }}</p>
-          </div>
-        </div>
-      </div>
-      
       <!-- メモ履歴プレビュー -->
       <div class="memo-history-preview">
         <h3 class="history-title">最近のメモ</h3>
@@ -83,7 +66,6 @@ import { supabase } from '@/lib/supabase'
 // リアクティブデータ
 const currentMemo = ref('')
 const memoSaved = ref(false)
-const todayMemos = ref([])
 const recentMemos = ref([])
 const error = ref(null)
 
@@ -158,8 +140,6 @@ const fetchMemos = async () => {
 
     if (fetchError) throw fetchError
 
-    const today = new Date().toISOString().split('T')[0]
-    todayMemos.value = data.filter(memo => memo.created_at.startsWith(today))
     recentMemos.value = data
 
   } catch (e) {
@@ -301,46 +281,6 @@ onMounted(() => {
   font-weight: bold;
 }
 
-.today-memos {
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.today-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.memo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.memo-item {
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #f093fb;
-}
-
-.memo-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.memo-time {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
 .memo-content {
   margin: 0;
   line-height: 1.5;
@@ -419,7 +359,6 @@ onMounted(() => {
   }
   
   .memo-input-section,
-  .today-memos,
   .memo-history-preview {
     padding: 1rem;
   }
