@@ -6,28 +6,17 @@
     <div class="memo-container">
       <!-- メモ入力エリア -->
       <div class="memo-input-section">
-        <div class="memo-categories">
-          <button
-            v-for="category in memoCategories"
-            :key="category.value"
-            :class="['category-btn', { active: selectedCategory === category.value }]"
-            @click="selectedCategory = category.value"
-          >
-            {{ category.emoji }} {{ category.label }}
-          </button>
-        </div>
-        
         <textarea
           v-model="currentMemo"
           class="memo-textarea"
-          :placeholder="getPlaceholderText()"
+          placeholder="今日の気分や出来事をメモしよう"
           rows="4"
         ></textarea>
         
         <div class="memo-actions">
           <button 
             class="save-memo-button" 
-            @click="saveMemo" 
+            @click="insertMemo" 
             :disabled="!currentMemo.trim()"
           >
             メモを保存
@@ -44,6 +33,9 @@
         <div v-if="memoSaved" class="memo-saved-message">
           ✅ メモが保存されました！
         </div>
+        <div v-if="error" class="error-message">
+          {{ error }}
+        </div>
       </div>
       
       <!-- 今日のメモ表示エリア -->
@@ -56,7 +48,7 @@
             class="memo-item"
           >
             <div class="memo-header">
-              <span class="memo-time">{{ formatTime(memo.timestamp) }}</span>
+              <span class="memo-time">{{ formatTime(memo.created_at) }}</span>
             </div>
             <p class="memo-content">{{ memo.content }}</p>
           </div>
@@ -72,7 +64,7 @@
             :key="memo.id"
             class="history-item"
           >
-            <div class="history-date">{{ formatDate(memo.date) }}</div>
+            <div class="history-date">{{ formatDate(memo.created_at) }}</div>
             <div class="history-content">{{ memo.content.substring(0, 50) }}{{ memo.content.length > 50 ? '...' : '' }}</div>
           </div>
         </div>
@@ -85,27 +77,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import moodDataLv2 from '@/data/moodDataLv2.json'
+import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase'
 
 // リアクティブデータ
 const currentMemo = ref('')
-const selectedCategory = ref('mood')
 const memoSaved = ref(false)
 const todayMemos = ref([])
-
-
-// プレースホルダーテキストを取得
-const getPlaceholderText = () => {
-  const placeholders = {
-    mood: '今日の気分はどうですか？何か特別な感情はありましたか？',
-    action: '今日行った行動や活動について記録してみましょう',
-    reflection: '今日一日を振り返って、気づいたことや学んだことは？',
-    gratitude: '今日感謝したいことや嬉しかったことを書いてみましょう',
-    goal: '明日の目標や今後やりたいことを記録してみましょう'
-  }
-  return placeholders[selectedCategory.value] || '自由にメモを書いてください'
-}
+const recentMemos = ref([])
+const error = ref(null)
 
 // 時刻をフォーマット
 const formatTime = (timestamp) => {
@@ -129,51 +109,65 @@ const formatDate = (dateString) => {
   }
 }
 
-// 最近のメモを取得（デモデータから）
-const recentMemos = computed(() => {
-  return moodDataLv2.moodRecords
-    .filter(record => record.actionMemo)
-    .map(record => ({
-      id: record.date,
-      date: record.date,
-      content: record.actionMemo,
-      category: 'action'
-    }))
-    .slice(-5)
-    .reverse()
-})
-
-// メモを保存
-const saveMemo = () => {
+// メモを保存 (Supabase)
+const insertMemo = async () => {
   if (!currentMemo.value.trim()) return
+  error.value = null
   
-  const newMemo = {
-    id: Date.now(),
-    content: currentMemo.value,
-    category: selectedCategory.value,
-    timestamp: new Date().toISOString(),
-    date: new Date().toISOString().split('T')[0]
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("ユーザーが認証されていません。")
+
+    const { data, error: insertError } = await supabase
+      .from('memos')
+      .insert([
+        { content: currentMemo.value, user_id: user.id }
+      ])
+      .select()
+
+    if (insertError) throw insertError
+
+    // 保存成功
+    memoSaved.value = true
+    setTimeout(() => {
+      memoSaved.value = false
+    }, 3000)
+    
+    currentMemo.value = ''
+    await fetchMemos() // メモ一覧を再取得
+
+  } catch (e) {
+    error.value = `エラーが発生しました: ${e.message}`
+    console.error('メモの保存に失敗しました:', e)
   }
-  
-  // 今日のメモリストに追加
-  todayMemos.value.push(newMemo)
-  
-  // ローカルストレージに保存（将来的にSupabaseに移行予定）
-  const existingMemos = JSON.parse(localStorage.getItem('userMemos') || '[]')
-  existingMemos.push(newMemo)
-  localStorage.setItem('userMemos', JSON.stringify(existingMemos))
-  
-  // 保存完了メッセージを表示
-  memoSaved.value = true
-  setTimeout(() => {
-    memoSaved.value = false
-  }, 3000)
-  
-  // 入力をクリア
-  currentMemo.value = ''
-  
-  console.log('メモを保存しました:', newMemo)
 }
+
+// メモを取得 (Supabase)
+const fetchMemos = async () => {
+  error.value = null
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return;
+
+    const { data, error: fetchError } = await supabase
+      .from('memos')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (fetchError) throw fetchError
+
+    const today = new Date().toISOString().split('T')[0]
+    todayMemos.value = data.filter(memo => memo.created_at.startsWith(today))
+    recentMemos.value = data
+
+  } catch (e) {
+    error.value = `メモの読み込みに失敗しました: ${e.message}`
+    console.error('メモの読み込みエラー:', e)
+  }
+}
+
 
 // メモをクリア
 const clearMemo = () => {
@@ -181,16 +175,9 @@ const clearMemo = () => {
   memoSaved.value = false
 }
 
-// 今日のメモを読み込み
-const loadTodayMemos = () => {
-  const today = new Date().toISOString().split('T')[0]
-  const existingMemos = JSON.parse(localStorage.getItem('userMemos') || '[]')
-  todayMemos.value = existingMemos.filter(memo => memo.date === today)
-}
-
-// コンポーネントマウント時に今日のメモを読み込み
+// コンポーネントマウント時にメモを読み込み
 onMounted(() => {
-  loadTodayMemos()
+  fetchMemos()
 })
 </script>
 
@@ -228,35 +215,6 @@ onMounted(() => {
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.memo-categories {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.category-btn {
-  padding: 0.5rem 1rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 20px;
-  background: #f8f9fa;
-  color: #6c757d;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.category-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.category-btn.active {
-  background: #f093fb;
-  border-color: #f093fb;
-  color: white;
 }
 
 .memo-textarea {
@@ -333,6 +291,16 @@ onMounted(() => {
   font-weight: bold;
 }
 
+.error-message {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
 .today-memos {
   background: rgba(255, 255, 255, 0.95);
   color: #333;
@@ -366,11 +334,6 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
-}
-
-.memo-category {
-  font-weight: bold;
-  color: #f093fb;
 }
 
 .memo-time {
@@ -436,15 +399,6 @@ onMounted(() => {
     padding: 1.5rem;
   }
   
-  .memo-categories {
-    justify-content: center;
-  }
-  
-  .category-btn {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
-  }
-  
   .memo-actions {
     flex-direction: column;
   }
@@ -468,15 +422,6 @@ onMounted(() => {
   .today-memos,
   .memo-history-preview {
     padding: 1rem;
-  }
-  
-  .memo-categories {
-    gap: 0.3rem;
-  }
-  
-  .category-btn {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.6rem;
   }
 }
 </style>
