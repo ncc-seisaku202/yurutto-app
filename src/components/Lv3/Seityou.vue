@@ -12,10 +12,10 @@
 </template>
 
 <script>
-import bugImg       from '../assets/bug.png';
-import saplingImg   from '../assets/sapling.png';
-import youngTreeImg from '../assets/young_tree.png';
-import bigTreeImg   from '../assets/big_tree.png';
+import bugImg       from '@/assets/bug.png';
+import saplingImg   from '@/assets/sapling.png';
+import youngTreeImg from '@/assets/young_tree.png';
+import bigTreeImg   from '@/assets/big_tree.png';
 
 export default {
   name: 'Seityou',
