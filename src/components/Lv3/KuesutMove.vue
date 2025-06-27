@@ -72,40 +72,10 @@
 
 <script>
 import Seityou from './Seityou.vue';
-export default {
-  name: 'Kuesut',
-  components: { Seityou },
-  data() {
-    return {
-       quest: {
-        name: '',
-        duration: '',
-        memo: '',
-        difficulty: '',
-        reward: '',
-        completed: false,
-      },
-      rewardClaimed: false,
-      selectedTemplateId: '',
-      totalExp: 0,
-    };
-  },
-  methods: {
-    toggleCompletion() {
-      this.quest.completed = !this.quest.completed;
-      if (this.quest.completed) {
-        this.totalExp += 100;           // クエスト達成で経験値加算
-      } else {
-        this.totalExp = Math.max(0, this.totalExp - 100); // 取り消し時は減算
-        this.rewardClaimed = false;
-      }
-    },
 
 export default {
   name: 'Kuesut',
-  components: {
-    Seityou,
-  },
+  components: { Seityou },
   data() {
     return {
       quest: {
@@ -118,7 +88,7 @@ export default {
       },
       rewardClaimed: false,
       selectedTemplateId: '',
-      totalExp: 0, // ← 累積経験値を追加
+      totalExp: 0,
       templates: [
         {
           id: 'template1',
@@ -155,9 +125,9 @@ export default {
     toggleCompletion() {
       this.quest.completed = !this.quest.completed;
       if (this.quest.completed) {
-        this.totalExp += 100; // ← 経験値を加算（例: 毎回100）
+        this.totalExp += 100;
       } else {
-        this.totalExp -= 100; // ← クエスト未達成に戻す場合
+        this.totalExp = Math.max(0, this.totalExp - 100);
         this.rewardClaimed = false;
       }
     },
@@ -166,9 +136,8 @@ export default {
     },
   },
 };
-  },
-};
 </script>
+
 
 
 <style scoped>
