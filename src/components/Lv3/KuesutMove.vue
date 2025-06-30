@@ -75,7 +75,7 @@ import SeityouView from './SeityouView.vue';
 
 export default {
   name: 'Kuesut',
-  components: { SeityouView },
+  components: { Seityou },
   data() {
     return {
       quest: {
