@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import Seityou from './Seityou.vue';
+import SeityouView from './SeityouView.vue';
 
 export default {
   name: 'Kuesut',
