@@ -22,9 +22,9 @@ export default {
   },
   computed: {
     stage() {
-      if (this.exp <= 10) return '芽';
-      if (this.exp <= 30) return '苗木';
-      if (this.exp <= 70) return '若木';
+      if (this.exp <= 300) return '芽';
+      if (this.exp <= 700) return '苗木';
+      if (this.exp <= 1200) return '若木';
       return '大樹';
     },
     treeImage() {
