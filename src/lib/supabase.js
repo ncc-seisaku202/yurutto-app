@@ -10,3 +10,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// REST API呼び出し時に使用する共通ヘッダーを生成
+export const buildRestHeaders = (accessToken) => ({
+  apikey: supabaseAnonKey,
+  Authorization: `Bearer ${accessToken}`,
+  Accept: 'application/json',
+})

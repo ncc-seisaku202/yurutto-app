@@ -104,7 +104,7 @@ async function checkMoodRecorded() {
       .select('mood, mood_level')
       .eq('user_id', user.id)
       .gte('created_at', todayStart.toISOString())
-      .single()
+      .maybeSingle()
 
     if (error && error.code !== 'PGRST116') {
       throw error
