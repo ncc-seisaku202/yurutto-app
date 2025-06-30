@@ -53,7 +53,7 @@
     <!-- 累計経験値で木を成長表示 -->
     <div class="mt-10 flex justify-center">
       <!-- ★ ここで合計経験値を渡す ★ -->
-      <Seityou :exp="totalExp" />
+      <SeityouView :exp="totalExp" />
     </div>
     <!-- 達成時フィードバック -->
     <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
