@@ -25,13 +25,21 @@
       <!-- 期間選択 -->
       <div class="form-group">
         <label for="duration">期間</label>
-        <select id="duration" v-model="selectedDuration">
-          <option disabled value="">選択してください</option>
-          <option value="7">1週間</option>
-          <option value="14">2週間</option>
-          <option value="21">3週間</option>
-          <option value="28">4週間</option>
-        </select>
+        <div class="duration-input-group">
+          <select id="duration" v-model="selectedDuration" :disabled="isDurationLocked">
+            <option disabled value="">選択してください</option>
+            <option value="7">1週間</option>
+            <option value="14">2週間</option>
+            <option value="21">3週間</option>
+            <option value="28">4週間</option>
+          </select>
+          <button v-if="selectedDuration" @click="toggleDurationLock">
+            {{ isDurationLocked ? '期間を変更' : '確定' }}
+          </button>
+        </div>
+        <p v-if="isDurationLocked && remainingDays !== null" class="remaining-days">
+          期限まであと {{ remainingDays }} 日
+        </p>
       </div>
     </div>
 
@@ -137,6 +145,9 @@ const isEditingStep = ref(false)
 const editedText = ref('')
 const showToast = ref(false)
 
+const isDurationLocked = ref(false)
+const planStartDate = ref(null)
+
 const isTemplateModalOpen = ref(false)
 const goalTemplates = ref([
   '朝の散歩を習慣にする',
@@ -165,6 +176,14 @@ const toggleTitleEdit = () => {
   if (!isEditingTitle.value) {
     savePlan()
   }
+}
+
+const toggleDurationLock = () => {
+  isDurationLocked.value = !isDurationLocked.value
+  if (isDurationLocked.value) {
+    planStartDate.value = new Date()
+  }
+  savePlan()
 }
 
 const addStepAndSave = () => {
@@ -219,6 +238,24 @@ const progressPercent = computed(() => {
   return Math.round((completedSteps.value / steps.value.length) * 100)
 })
 
+const remainingDays = computed(() => {
+  if (!isDurationLocked.value || !planStartDate.value || !selectedDuration.value) {
+    return null
+  }
+  const start = new Date(planStartDate.value)
+  const today = new Date()
+  start.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  const endDate = new Date(start.getTime())
+  endDate.setDate(start.getDate() + parseInt(selectedDuration.value, 10))
+
+  const diffTime = endDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays >= 0 ? diffDays : 0
+})
+
 const triggerToast = () => {
   showToast.value = true
   setTimeout(() => {
@@ -230,7 +267,9 @@ const savePlan = () => {
   const planData = {
     title: planTitle.value,
     duration: selectedDuration.value,
-    steps: steps.value
+    steps: steps.value,
+    startDate: planStartDate.value,
+    durationLocked: isDurationLocked.value
   }
   localStorage.setItem('myPlan', JSON.stringify(planData))
   console.log('保存しました:', planData)
@@ -245,7 +284,11 @@ const loadPlan = () => {
     planTitle.value = data.title
     selectedDuration.value = data.duration
     steps.value = data.steps
-    isEditingTitle.value = false
+    isEditingTitle.value = !data.title
+    if (data.startDate) {
+      planStartDate.value = new Date(data.startDate)
+    }
+    isDurationLocked.value = data.durationLocked ?? false
   } catch (e) {
     console.warn('読み込みエラー', e)
   }
@@ -494,6 +537,38 @@ select {
 .goal-input-group button:hover {
   background-color: #f4a9c4;
 }
+
+.duration-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.duration-input-group select[disabled] {
+  background-color: #f1f1f1;
+  color: #666;
+  cursor: not-allowed;
+}
+.duration-input-group button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #f8c8dc;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.duration-input-group button:hover {
+  background-color: #f4a9c4;
+}
+.remaining-days {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #007bff;
+}
+
 .toast-notification {
   position: fixed;
   top: 20px;
