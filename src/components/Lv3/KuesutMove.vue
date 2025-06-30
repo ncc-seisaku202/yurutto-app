@@ -45,16 +45,16 @@
     <!-- クエスト進捗 -->
     <div class="mt-6">
       <label class="block mb-2">進捗管理</label>
-      <button @click="toggleCompletion" class="px-4 py-2 bg-blue-500 text-white rounded">
+      <button @click="toggleCompletion" :disabled="isToggleDisabled" class="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">
         {{ quest.completed ? '達成済み ✔' : '未達成' }}
       </button>
     </div>
 
     <!-- 累計経験値で木を成長表示 -->
     <div class="mt-10 flex justify-center">
-      <!-- ★ ここで合計経験値を渡す ★ -->
       <SeityouView :exp="totalExp" />
     </div>
+
     <!-- 達成時フィードバック -->
     <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
       <h2 class="font-bold text-lg text-green-800">🎉 クエスト達成！</h2>
@@ -89,6 +89,7 @@ export default {
       rewardClaimed: false,
       selectedTemplateId: '',
       totalExp: 0,
+      lastCompletionDate: '',
       templates: [
         {
           id: 'template1',
@@ -111,6 +112,12 @@ export default {
       ],
     };
   },
+  computed: {
+    isToggleDisabled() {
+      const today = new Date().toISOString().split('T')[0];
+      return this.lastCompletionDate === today;
+    },
+  },
   methods: {
     applyTemplate() {
       const template = this.templates.find(t => t.id === this.selectedTemplateId);
@@ -123,12 +130,12 @@ export default {
       }
     },
     toggleCompletion() {
-      this.quest.completed = !this.quest.completed;
-      if (this.quest.completed) {
+      const today = new Date().toISOString().split('T')[0];
+      if (this.lastCompletionDate === today) return;
+      if (confirm('今日のクエストを達成しましたか？')) {
+        this.quest.completed = true;
         this.totalExp += 100;
-      } else {
-        this.totalExp = Math.max(0, this.totalExp - 100);
-        this.rewardClaimed = false;
+        this.lastCompletionDate = today;
       }
     },
     claimReward() {
@@ -137,13 +144,6 @@ export default {
   },
 };
 </script>
-
-
-
-<style scoped>
-/* optional styling */
-</style>
-
 
 <style scoped>
 .container {
@@ -163,7 +163,6 @@ h1 {
   margin-bottom: 2rem;
 }
 
-/* ラベルと入力欄の縦並び */
 label {
   display: block;
   margin-bottom: 0.4rem;
@@ -183,7 +182,6 @@ textarea {
   box-sizing: border-box;
 }
 
-/* ボタン共通 */
 button {
   display: block;
   width: 100%;
@@ -200,7 +198,6 @@ button:hover {
   background-color: #444;
 }
 
-/* ごほうびボタン */
 .reward-button {
   background-color: #facc15;
   color: black;
