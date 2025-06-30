@@ -5,6 +5,7 @@ import Lv1 from './components/Lv1/MainView.vue'
 import Lv2 from './components/Lv2/MainView.vue'
 import Lv3 from './components/Lv3/MainView.vue'
 import Lv4 from './components/Lv4/MainView.vue' // ← 追加
+import Lv5 from './components/Lv5/MainView.vue'
 import LoginForm from './components/LoginForm.vue'
 
 const currentLevel = ref('Lv2') // デフォルトをLv2に設定
@@ -91,6 +92,12 @@ onMounted(async () => {
             >
               Lv4
             </button>
+            <button
+              :class="['level-btn', { active: currentLevel === 'Lv5' }]"
+              @click="currentLevel = 'Lv5'"
+            >
+              Lv5
+            </button>
           </div>
 
           <button @click="handleLogout" class="logout-button">ログアウト</button>
@@ -102,6 +109,7 @@ onMounted(async () => {
       <Lv2 v-if="currentLevel === 'Lv2'" />
       <Lv3 v-if="currentLevel === 'Lv3'" />
       <Lv4 v-if="currentLevel === 'Lv4'" />
+      <Lv5 v-if="currentLevel === 'Lv5'" />
     </div>
   </div>
 </template>
