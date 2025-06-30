@@ -3,7 +3,6 @@
     <MoodInput3 />
     <ActionGacha3 />
     <KuesutMove />
-    <Seityou />
     <MoodChart />
     <MoodCalendar3 />
     <NightModeToggle />
@@ -14,7 +13,6 @@
 import MoodInput3 from './MoodInput3.vue'
 import ActionGacha3 from './ActionGacha3.vue'
 import KuesutMove from './KuesutMove.vue'
-import Seityou from './Seityou.vue'
 import MoodChart from './MoodChart.vue'
 import MoodCalendar3 from './MoodCalendar3.vue'
 </script>

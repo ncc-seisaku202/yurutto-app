@@ -8,8 +8,7 @@
 
     <!-- Lv4特有の要素 -->
     <div class="section">
-      <MyPlan />
-      <ReflectionNote />
+      <h1>ここにLv5の新機能が追加される</h1>
     </div>
 
     <!-- 既存流用コンポーネント -->
@@ -22,10 +21,6 @@
 </template>
 
 <script setup>
-// Lv4新機能
-import MyPlan from './MyPlan.vue'
-import ReflectionNote from './ReflectionNote.vue' 
-
 // Lv2から再利用
 import MoodInput from '../Lv2/MoodInput.vue'
 import MoodChart from '../Lv2/MoodChart.vue'
