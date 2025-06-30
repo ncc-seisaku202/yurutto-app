@@ -1,9 +1,12 @@
 <template>
   <div class="container">
-    <!-- Lv4特有の要素 -->
-    <h1 class="title">🧠 自分だけのマイプラン</h1>
+    <!-- 既存流用コンポーネント -->
+    <div class="section">
+      <MoodInput />
+      <ActionGacha />
+    </div>
 
-    <!-- 新機能への導線 -->
+    <!-- Lv4特有の要素 -->
     <div class="section">
       <MyPlan />
       <ReflectionNote />
@@ -23,9 +26,13 @@
 import MyPlan from './MyPlan.vue'
 import ReflectionNote from './ReflectionNote.vue' 
 
+// Lv2から再利用
+import MoodInput from '../Lv2/MoodInput.vue'
+import MoodChart from '../Lv2/MoodChart.vue'
+import MoodCalendar from '../Lv2/MoodCalendar.vue'
+
 // Lv1から再利用
-import MoodChart from '../Lv1/MoodChart.vue'
-import MoodCalendar from '../Lv1/MoodCalendar.vue'
+import ActionGacha from '../Lv1//ActionGacha.vue'
 import NightModeToggle from '../Lv1/NightModeToggle.vue'
 </script>
 
