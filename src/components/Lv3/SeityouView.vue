@@ -2,7 +2,8 @@
   <div class="tree-container">
     <img :src="treeImage" :alt="stage" class="tree-img" />
     <p class="text-center mt-2 text-sm text-gray-600">
-      経験値: {{ exp }} / 現在: {{ stage }}
+      経験値: {{ exp }} / 現在: {{ stage }} <br>
+      毎日のご褒美達成で育てよう🌳
     </p>
   </div>
 </template>
