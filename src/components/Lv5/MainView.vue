@@ -8,7 +8,7 @@
 
     <!-- Lv4特有の要素 -->
     <div class="section">
-      <h1>ここにLv5の新機能が追加される</h1>
+      <DiscoverValues />
     </div>
 
     <!-- 既存流用コンポーネント -->
@@ -21,8 +21,11 @@
 </template>
 
 <script setup>
-// Lv2から再利用
+//Lv5nの新機能
 import MoodInput from '../Lv2/MoodInput.vue'
+
+// Lv2から再利用
+import DiscoverValues from './DiscoverValues.vue'
 import MoodChart from '../Lv2/MoodChart.vue'
 import MoodCalendar from '../Lv2/MoodCalendar.vue'
 
