@@ -235,7 +235,7 @@ const upsertPlan = async () => {
     return null // エラー時はnullを返す
   } else {
     plan.value = data
-    triggerToast('保存しました！')
+    // triggerToast('保存しました！') // ここではToastを呼ばない
     return data // 成功時は更新されたデータを返す
   }
 }
@@ -331,9 +331,13 @@ const toggleTitleEdit = async () => {
             plan.value = data;
             selectedDuration.value = '';
             isDurationLocked.value = false;
+            triggerToast('新しい目標を設定しました！');
         }
     } else {
-        await upsertPlan();
+        const result = await upsertPlan();
+        if (result) {
+            triggerToast('保存しました！');
+        }
     }
   }
 }
@@ -342,7 +346,10 @@ const toggleTitleEdit = async () => {
 // 期間のロック切り替え
 const toggleDurationLock = async () => {
   isDurationLocked.value = !isDurationLocked.value
-  await upsertPlan()
+  const result = await upsertPlan()
+  if(result) {
+    triggerToast('期間を確定しました！')
+  }
 }
 
 // ステップのチェックボックス変更
