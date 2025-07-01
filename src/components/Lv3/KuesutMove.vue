@@ -1,6 +1,7 @@
 <template>
   <div class="p-4 max-w-2xl mx-auto">
-    <h1 class="text-2xl font-bold mb-4">クエスト作成</h1>
+  <div class="space-y-4 quest-form">
+    <h1 class="text-2xl font-bold mb-4">⚔クエスト作成</h1>
 
     <!-- テンプレート選択 -->
     <div class="mb-4">
@@ -13,23 +14,23 @@
       </select>
     </div>
 
-    <!-- クエスト作成フォーム -->
-    <div class="space-y-4">
+    <!-- クエスト作成フォーム + 進捗管理 -->
+    
       <div>
         <label class="block">クエスト名</label>
-        <input v-model="quest.name" class="border p-2 w-full rounded" placeholder="例: 毎日早起きチャレンジ" />
+        <input v-model="quest.name" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: 毎日早起きチャレンジ" />
       </div>
       <div>
         <label class="block">期間</label>
-        <input v-model="quest.duration" type="text" class="border p-2 w-full rounded" placeholder="例: 7日間" />
+        <input v-model="quest.duration" type="text" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: 7日間" />
       </div>
       <div>
         <label class="block">内容メモ</label>
-        <textarea v-model="quest.memo" class="border p-2 w-full rounded" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
+        <textarea v-model="quest.memo" class="border px-3 py-[0.4rem] w-full rounded" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
       </div>
       <div>
         <label class="block">難易度</label>
-        <select v-model="quest.difficulty" class="border p-2 w-full rounded">
+        <select v-model="quest.difficulty" class="border px-3 py-[0.4rem] w-full rounded">
           <option disabled value="">選択してください</option>
           <option>簡単</option>
           <option>普通</option>
@@ -38,34 +39,51 @@
       </div>
       <div>
         <label class="block">ごほうび設定</label>
-        <input v-model="quest.reward" class="border p-2 w-full rounded" placeholder="例: ケーキを食べる！" />
+        <input v-model="quest.reward" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: ケーキを食べる！" />
+      </div>
+
+      <!-- 進捗管理（フォーム内に移動） -->
+      <div class="mt-4">
+        <label class="block mb-2">進捗管理</label>
+        <button
+          @click="toggleCompletion"
+          :disabled="isToggleDisabled"
+          :class="[
+            'px-4 py-[0.6rem] rounded w-full text-white font-bold transition-colors',
+            quest.completed
+              ? 'bg-red-500 border-2 border-red-600 hover:bg-red-600'
+              : 'bg-blue-500 border-2 border-transparent hover:bg-blue-600',
+            isToggleDisabled ? 'opacity-50 cursor-not-allowed' : ''
+          ]"
+        >
+          {{ quest.completed ? '達成済み ✔' : '未達成' }}
+        </button>
       </div>
     </div>
 
-    <!-- クエスト進捗 -->
-    <div class="mt-6">
-      <label class="block mb-2">進捗管理</label>
-      <button @click="toggleCompletion" :disabled="isToggleDisabled" class="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50">
-        {{ quest.completed ? '達成済み ✔' : '未達成' }}
-      </button>
-    </div>
 
-    <!-- 累計経験値で木を成長表示 -->
-    <div class="mt-10 flex justify-center">
-      <SeityouView :exp="totalExp" />
+    <!-- 開発者用: リセットボタン -->
+    <div class="mt-2">
+      <button @click="resetProgress" class="w-full bg-red-500 text-white px-4 py-2 rounded">
+        🔄 進捗をリセット（開発用）
+      </button>
     </div>
 
     <!-- 達成時フィードバック -->
     <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
       <h2 class="font-bold text-lg text-green-800">🎉 クエスト達成！</h2>
       <p>経験値 +100</p>
-      <p>祝福メッセージ: よくがんばりました！</p>
+      <p>祝福メッセージ: {{ randomMessage }}</p> 
       <div class="mt-2">
-        <button @click="claimReward" class="bg-yellow-400 px-4 py-2 rounded font-bold">
+        <button @click="claimReward" class="bg-yellow-400 px-4 py-2 rounded font-bold w-full">
           🎁 ごほうびゲット！
         </button>
         <p v-if="rewardClaimed" class="mt-2 text-sm">ごほうび: {{ quest.reward }}</p>
       </div>
+    </div>
+    <!-- 累計経験値で木を成長表示 -->
+    <div class="mt-10 flex justify-center">
+      <SeityouView :exp="totalExp" />
     </div>
   </div>
 </template>
@@ -90,6 +108,15 @@ export default {
       selectedTemplateId: '',
       totalExp: 0,
       lastCompletionDate: '',
+      randomMessage: '', // ← 追加
+    successMessages: [ // ← 追加
+      "よくがんばりました！",
+      "すばらしい努力です！",
+      "継続は力なり！",
+      "あなたは今日も輝いています！",
+      "その調子で続けていこう！",
+      "達成おめでとうございます！"
+    ],
       templates: [
         {
           id: 'template1',
@@ -114,7 +141,7 @@ export default {
   },
   computed: {
     isToggleDisabled() {
-      const today = new Date().toISOString().split('T')[0];
+      const today = this.todayDate();
       return this.lastCompletionDate === today;
     },
   },
@@ -130,16 +157,35 @@ export default {
       }
     },
     toggleCompletion() {
-      const today = new Date().toISOString().split('T')[0];
-      if (this.lastCompletionDate === today) return;
-      if (confirm('今日のクエストを達成しましたか？')) {
-        this.quest.completed = true;
-        this.totalExp += 100;
-        this.lastCompletionDate = today;
-      }
-    },
+  if (this.lastCompletedDate === this.todayDate()) {
+    alert('今日はすでに完了しています！');
+    return;
+  }
+
+  if (!confirm('今日のクエストを達成しましたか？')) {
+    return;
+  }
+
+  this.quest.completed = true;
+  this.lastCompletedDate = this.todayDate();
+  this.totalExp += 100;
+
+  // ランダム祝福メッセージ
+  const i = Math.floor(Math.random() * this.successMessages.length);
+  this.randomMessage = this.successMessages[i];
+},
     claimReward() {
       this.rewardClaimed = true;
+    },
+    resetProgress() {
+      this.quest.completed = false;
+      this.rewardClaimed = false;
+      this.totalExp = 0;
+      this.lastCompletionDate = '';
+      alert('進捗がリセットされました');
+    },
+    todayDate() {
+      return new Date().toISOString().split('T')[0];
     },
   },
 };
@@ -150,9 +196,9 @@ export default {
   max-width: 400px;
   margin: 3rem auto;
   padding: 2rem;
-  background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  background-color: #ff9e3e;
+  box-shadow: 0 0 15px rgba(255, 150, 50, 0.5);
+  border-radius: 1rem;
   font-family: sans-serif;
 }
 
@@ -212,4 +258,23 @@ button:hover {
   margin-top: 2rem;
   text-align: center;
 }
+.quest-form {
+  background-color: #ff9e3e;
+  box-shadow: 0 0 12px rgba(255, 140, 30, 0.4);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+/* 入力欄の高さ調整 */
+.quest-form input,
+.quest-form select,
+.quest-form textarea {
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
 </style>
