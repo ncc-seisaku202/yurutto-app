@@ -6,9 +6,14 @@
       <ActionGacha />
     </div>
 
-    <!-- Lv4特有の要素 -->
+    <!-- Lv5特有の要素 -->
     <div class="section">
       <DiscoverValues />
+    </div>
+
+    <!-- 道しるべマップ -->
+    <div class="section">
+      <RoadmapCreator />
     </div>
 
     <!-- 既存流用コンポーネント -->
@@ -21,11 +26,11 @@
 </template>
 
 <script setup>
-//Lv5nの新機能
-import MoodInput from '../Lv2/MoodInput.vue'
+// Lv5特有の要素
+import DiscoverValues from './DiscoverValues.vue'
+import RoadmapCreator from './RoadmapCreator.vue'
 
 // Lv2から再利用
-import DiscoverValues from './DiscoverValues.vue'
 import MoodChart from '../Lv2/MoodChart.vue'
 import MoodCalendar from '../Lv2/MoodCalendar.vue'
 
