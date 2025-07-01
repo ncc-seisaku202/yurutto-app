@@ -172,17 +172,20 @@ const loadData = async () => {
   }
   user.value = session.user
 
-  // ユーザーのプランを取得 (最大1つ)
-  const { data: planData, error: planError } = await supabase
+  // ユーザーの最新プランを取得
+  const { data: plansData, error: planError } = await supabase
     .from('plans')
     .select('*')
     .eq('user_id', user.value.id)
-    .maybeSingle()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
   if (planError) {
     console.error('プランの読み込みエラー:', planError)
     return
   }
+
+  const planData = plansData && plansData.length > 0 ? plansData[0] : null
 
   if (planData) {
     plan.value = planData
@@ -229,11 +232,12 @@ const upsertPlan = async () => {
 
   if (error) {
     console.error('プランの保存エラー:', error)
+    return null // エラー時はnullを返す
   } else {
     plan.value = data
     triggerToast('保存しました！')
+    return data // 成功時は更新されたデータを返す
   }
-  return data
 }
 
 // ステップの追加
@@ -298,16 +302,20 @@ const deleteStep = async (stepId, index) => {
 const toggleTitleEdit = async () => {
   isEditingTitle.value = !isEditingTitle.value
   if (!isEditingTitle.value) {
-    // 目標が変更されたら期間もリセットするルール
     if (plan.value && plan.value.title !== planTitle.value) {
         // 既存のステップをすべて削除
-        const deletePromises = steps.value.map(step => 
-            supabase.from('steps').delete().eq('id', step.id)
-        );
-        await Promise.all(deletePromises);
-        steps.value = [];
+        if (steps.value.length > 0) {
+            const deletePromises = steps.value.map(step => 
+                supabase.from('steps').delete().eq('id', step.id)
+            );
+            await Promise.all(deletePromises);
+            steps.value = [];
+        }
 
-        // プランをリセットして新規作成
+        // 古いプランを削除
+        await supabase.from('plans').delete().eq('id', plan.value.id);
+
+        // 新しいプランをリセットして作成
         const newPlanId = crypto.randomUUID();
         const updates = {
             id: newPlanId,
