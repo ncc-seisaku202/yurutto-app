@@ -175,7 +175,7 @@
           @click="saveRoadmap"
         >
           <span class="button-icon">💾</span>
-          道しるべマップを保存
+          {{ isEditMode ? '更新する' : '道しるべマップを保存' }}
         </button>
         <button
           class="reset-button"
@@ -185,7 +185,15 @@
           <span class="button-icon">🔄</span>
           リセット
         </button>
-        </div>
+        <button
+          v-if="isEditMode"
+          class="cancel-button"
+          @click="cancelEdit"
+        >
+          <span class="button-icon">❌</span>
+          キャンセル
+        </button>
+      </div>
       </div>
     </div>
   </div>
@@ -203,6 +211,7 @@ const roadmapData = ref({
 })
 const isEditMode = ref(false)
 const savedAt = ref(null)
+const lastKnownValues = ref([])
 
 // 編集前の状態を保存（キャンセル用）
 const originalRoadmapData = ref({})
@@ -285,6 +294,11 @@ const enterEditMode = () => {
   isEditMode.value = true
 }
 
+const cancelEdit = () => {
+  roadmapData.value = JSON.parse(JSON.stringify(originalRoadmapData.value))
+  isEditMode.value = false
+}
+
 
 const formatSavedDate = (dateString) => {
   const date = new Date(dateString)
@@ -297,13 +311,53 @@ const formatSavedDate = (dateString) => {
   })
 }
 
-// 価値観データを読み込み
-const loadDiscoveredValues = () => {
+// 価値観変更を検知する関数
+const checkValuesChange = () => {
   const saved = localStorage.getItem('discoveredValues')
   if (saved) {
     const data = JSON.parse(saved)
-    discoveredValues.value = data.selectedKeywords || []
+    const currentValues = data.selectedKeywords || []
+    
+    // 初回読み込み時は比較しない
+    if (lastKnownValues.value.length === 0) {
+      lastKnownValues.value = [...currentValues]
+      discoveredValues.value = currentValues
+      return
+    }
+    
+    // 価値観が変更されているかチェック
+    const hasChanged = JSON.stringify(lastKnownValues.value.sort()) !== JSON.stringify(currentValues.sort())
+    
+    if (hasChanged && hasSavedRoadmap.value) {
+      const confirmMessage = `価値観が変更されました。\n道しるべマップをリセットして新しく作り直しますか？\n\n※「キャンセル」を選択すると価値観の変更は反映されません。`
+      
+      if (confirm(confirmMessage)) {
+        // 道しるべマップをリセット
+        roadmapData.value = {
+          year1: { vision: '', relatedValues: [] },
+          year3: { vision: '', relatedValues: [] },
+          year5: { vision: '', relatedValues: [] }
+        }
+        savedAt.value = null
+        localStorage.removeItem('roadmapData')
+        
+        // 新しい価値観を適用
+        discoveredValues.value = currentValues
+        lastKnownValues.value = [...currentValues]
+        
+        alert('道しるべマップをリセットしました。新しい価値観で作り直してください。')
+      }
+    } else {
+      // 変更がない場合、または道しるべマップが未作成の場合は通常更新
+      discoveredValues.value = currentValues
+      lastKnownValues.value = [...currentValues]
+    }
   }
+}
+
+// 価値観データを読み込み
+const loadDiscoveredValues = () => {
+  checkValuesChange()
 }
 
 // 道しるべマップデータを読み込み
@@ -320,10 +374,19 @@ const loadRoadmapData = () => {
   }
 }
 
+// 価値観のリアルタイム監視
+const startValuesWatcher = () => {
+  // 5秒ごとに価値観の変更をチェック
+  setInterval(() => {
+    checkValuesChange()
+  }, 5000)
+}
+
 // コンポーネント初期化時に実行
 onMounted(() => {
   loadDiscoveredValues()
   loadRoadmapData()
+  startValuesWatcher()
 })
 </script>
 
@@ -662,7 +725,8 @@ onMounted(() => {
 }
 
 .save-button,
-.reset-button {
+.reset-button,
+.cancel-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -695,6 +759,17 @@ onMounted(() => {
 .reset-button:hover:not(:disabled) {
   background: #f7fafc;
   border-color: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+.cancel-button {
+  background: #ffffff;
+  color: #e53e3e;
+  border: 2px solid #fed7d7;
+}
+
+.cancel-button:hover {
+  background: #fed7d7;
   transform: translateY(-1px);
 }
 
