@@ -182,6 +182,7 @@ const addNote = async () => {
       .select()
       .single()
     if (error) throw error
+    notes.value.unshift(data) // UIに即時反映
     // Realtime subscription will handle adding the note to the UI
     resetForm()
     triggerToast('記録を保存しました！')
