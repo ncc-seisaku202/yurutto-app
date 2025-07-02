@@ -6,10 +6,14 @@
       <ActionGacha />
     </div>
 
-    <!-- Lv4特有の要素 -->
+    <!-- Lv5特有の要素 -->
     <div class="section">
-      <MyPlan />
-      <ReflectionNote />
+      <DiscoverValues />
+    </div>
+
+    <!-- 道しるべマップ -->
+    <div class="section">
+      <RoadmapCreator />
     </div>
 
     <!-- 既存流用コンポーネント -->
@@ -22,9 +26,9 @@
 </template>
 
 <script setup>
-// Lv4新機能
-import MyPlan from './MyPlan.vue'
-import ReflectionNote from './ReflectionNote.vue' 
+// Lv5特有の要素
+import DiscoverValues from './DiscoverValues.vue'
+import RoadmapCreator from './RoadmapCreator.vue'
 
 // Lv2から再利用
 import MoodInput from '../Lv2/MoodInput.vue'

@@ -15,6 +15,7 @@
             type="text"
             placeholder="例: 朝の散歩を習慣にする"
           />
+          <button @click="openTemplateModal">テンプレートを見る</button>
           <button @click="toggleTitleEdit">
             {{ isEditingTitle ? '確定' : '目標名を変更' }}
           </button>
@@ -24,13 +25,21 @@
       <!-- 期間選択 -->
       <div class="form-group">
         <label for="duration">期間</label>
-        <select id="duration" v-model="selectedDuration">
-          <option disabled value="">選択してください</option>
-          <option value="7">1週間</option>
-          <option value="14">2週間</option>
-          <option value="21">3週間</option>
-          <option value="28">4週間</option>
-        </select>
+        <div class="duration-input-group">
+          <select id="duration" v-model="selectedDuration" :disabled="isDurationLocked">
+            <option disabled value="">選択してください</option>
+            <option value="7">1週間</option>
+            <option value="14">2週間</option>
+            <option value="21">3週間</option>
+            <option value="28">4週間</option>
+          </select>
+          <button v-if="selectedDuration" @click="toggleDurationLock">
+            {{ isDurationLocked ? '期間を変更' : '確定' }}
+          </button>
+        </div>
+        <p v-if="isDurationLocked && remainingDays !== null" class="remaining-days">
+          期限まであと {{ remainingDays }} 日
+        </p>
       </div>
     </div>
 
@@ -40,7 +49,7 @@
         <label>ステップを追加</label>
         <div class="step-input">
           <input v-model="newStep" placeholder="例: 毎朝7時に起きる" />
-          <button @click="addStepAndSave" :disabled="!newStep.trim()">追加して保存</button>
+          <button @click="addStep" :disabled="!newStep.trim()">追加</button>
         </div>
 
         <!-- 進捗バー -->
@@ -54,19 +63,19 @@
         <!-- ステップ一覧 -->
         <div class="step-cards">
           <div
-            v-for="(step, index) in steps"
-            :key="index"
+            v-for="(step) in steps"
+            :key="step.id"
             class="step-card"
             :class="{ completed: step.completed }"
           >
-            <div class="step-card-inner" @click="openModal(step, index)">
+            <div class="step-card-inner" @click="openModal(step)">
               <span class="step-text">{{ step.text }}</span>
             </div>
             <input
               type="checkbox"
               class="step-checkbox"
               v-model="step.completed"
-              @change="handleCheckboxChange($event)"
+              @change="handleCheckboxChange($event, step)"
             />
           </div>
         </div>
@@ -74,68 +83,286 @@
     </div>
 
     <!-- 詳細表示モーダル -->
-<div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
-  <div class="modal-content">
-    <h3>ステップの詳細</h3>
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>ステップの詳細</h3>
 
-    <template v-if="!isEditingStep">
-      <p>{{ selectedStep?.text }}</p>
-      <p>状態: {{ selectedStep?.completed ? '完了' : '未完了' }}</p>
-      <button @click="isEditingStep = true">✏️ 編集する</button>
-      <button @click="deleteSelectedStep">このステップを削除</button>
-      <button @click="closeModal">閉じる</button>
-    </template>
+        <template v-if="!isEditingStep">
+          <p>{{ selectedStep?.text }}</p>
+          <p>状態: {{ selectedStep?.completed ? '完了' : '未完了' }}</p>
+          <button @click="isEditingStep = true">✏️ 編集する</button>
+          <button @click="deleteSelectedStep">このステップを削除</button>
+          <button @click="closeModal">閉じる</button>
+        </template>
 
-    <template v-else>
-      <input v-model="editedText" class="edit-input" placeholder="ステップを編集..." />
-      <div class="modal-buttons">
-        <button @click="saveEditedStep">保存する</button>
-        <button @click="isEditingStep = false">キャンセル</button>
+        <template v-else>
+          <input v-model="editedText" class="edit-input" placeholder="ステップを編集..." />
+          <div class="modal-buttons">
+            <button @click="saveEditedStep">保存する</button>
+            <button @click="isEditingStep = false">キャンセル</button>
+          </div>
+        </template>
       </div>
-    </template>
-  </div>
-</div>
+    </div>
 
-<!-- トースト通知 -->
-<div v-if="showToast" class="toast-notification">
-  ✅ 保存しました！
-</div>
+    <!-- 目標テンプレート選択モーダル -->
+    <div v-if="isTemplateModalOpen" class="modal-overlay" @click.self="closeTemplateModal">
+      <div class="modal-content">
+        <h3>目標テンプレート</h3>
+        <ul class="template-list">
+          <li
+            v-for="template in goalTemplates"
+            :key="template"
+            class="template-item"
+            @click="selectTemplate(template)"
+          >
+            {{ template }}
+          </li>
+        </ul>
+        <button @click="closeTemplateModal">閉じる</button>
+      </div>
+    </div>
 
-
+    <!-- トースト通知 -->
+    <div v-if="showToast" class="toast-notification">
+      {{ showToast }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { supabase } from '@/lib/supabase'
 
+// Supabaseから取得するデータ
+const plan = ref(null)
+const steps = ref([])
+const user = ref(null)
+
+// UIの状態管理
 const planTitle = ref('')
 const isEditingTitle = ref(true)
 const selectedDuration = ref('')
 const newStep = ref('')
-const steps = ref([])
 const isModalOpen = ref(false)
 const selectedStep = ref(null)
-const selectedIndex = ref(null)
 const isEditingStep = ref(false)
 const editedText = ref('')
 const showToast = ref(false)
+const isDurationLocked = ref(false)
+const isTemplateModalOpen = ref(false)
 
-const toggleTitleEdit = () => {
-  isEditingTitle.value = !isEditingTitle.value
-  if (!isEditingTitle.value) {
-    savePlan()
+// 目標テンプレート
+const goalTemplates = ref([
+  '朝の散歩を習慣にする',
+  '毎日10分間ストレッチする',
+  '寝る前に日記をつける',
+  '週に2回は自炊する',
+  '毎日水を2リットル飲む'
+])
+
+// --- Supabase連携 ---
+
+// データの読み込み
+const loadData = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) {
+    console.error('ユーザーがログインしていません。')
+    return
+  }
+  user.value = session.user
+
+  // ユーザーの最新プランを取得
+  const { data: plansData, error: planError } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('user_id', user.value.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (planError) {
+    console.error('プランの読み込みエラー:', planError)
+    return
+  }
+
+  const planData = plansData && plansData.length > 0 ? plansData[0] : null
+
+  if (planData) {
+    plan.value = planData
+    planTitle.value = planData.title
+    selectedDuration.value = planData.duration
+    isEditingTitle.value = !planData.title
+    isDurationLocked.value = !!planData.duration
+
+    // プランに紐づくステップを取得
+    const { data: stepsData, error: stepsError } = await supabase
+      .from('steps')
+      .select('*')
+      .eq('plan_id', plan.value.id)
+      .order('created_at', { ascending: true })
+
+    if (stepsError) {
+      console.error('ステップの読み込みエラー:', stepsError)
+    } else {
+      steps.value = stepsData
+    }
+  } else {
+    // プランがない場合は初期状態
+    isEditingTitle.value = true
+    isDurationLocked.value = false
   }
 }
 
-const addStepAndSave = () => {
-  steps.value.push({ text: newStep.value, completed: false })
-  newStep.value = ''
-  savePlan()
+// プランの作成または更新
+const upsertPlan = async () => {
+  if (!user.value) return
+
+  // 新規作成時にIDがなければ、ここで作成
+  const planId = plan.value?.id || crypto.randomUUID()
+
+  const updates = {
+    id: planId,
+    user_id: user.value.id,
+    title: planTitle.value,
+    duration: selectedDuration.value ? parseInt(selectedDuration.value, 10) : null,
+    created_at: plan.value?.created_at || new Date().toISOString()
+  }
+
+  const { data, error } = await supabase.from('plans').upsert(updates).select().single()
+
+  if (error) {
+    console.error('プランの保存エラー:', error)
+    return null // エラー時はnullを返す
+  } else {
+    plan.value = data
+    // triggerToast('保存しました！') // ここではToastを呼ばない
+    return data // 成功時は更新されたデータを返す
+  }
 }
 
-const openModal = (step, index) => {
-  selectedStep.value = step
-  selectedIndex.value = index
+// ステップの追加
+const addStep = async () => {
+  if (!newStep.value.trim() || !user.value) return
+
+  let currentPlan = plan.value
+  // プランがまだ存在しない場合は、まずプランを作成する
+  if (!currentPlan) {
+    currentPlan = await upsertPlan()
+    if (!currentPlan) return // プラン作成に失敗した場合は中断
+  }
+
+  const { data, error } = await supabase
+    .from('steps')
+    .insert({
+      plan_id: currentPlan.id,
+      user_id: user.value.id,
+      text: newStep.value.trim()
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('ステップの追加エラー:', error)
+  } else {
+    steps.value.push(data)
+    newStep.value = ''
+    triggerToast('ステップを追加しました！')
+  }
+}
+
+// ステップの更新
+const updateStep = async (stepToUpdate) => {
+  const { error } = await supabase
+    .from('steps')
+    .update({ text: stepToUpdate.text, completed: stepToUpdate.completed })
+    .eq('id', stepToUpdate.id)
+
+  if (error) {
+    console.error('ステップの更新エラー:', error)
+  } else {
+    triggerToast('更新しました！')
+  }
+}
+
+// ステップの削除
+const deleteStep = async (stepId, index) => {
+  const { error } = await supabase.from('steps').delete().eq('id', stepId)
+  if (error) {
+    console.error('ステップの削除エラー:', error)
+  } else {
+    steps.value.splice(index, 1)
+    triggerToast('ステップを削除しました！')
+  }
+}
+
+
+// --- UIイベントハンドラ ---
+
+// 目標名の編集切り替え
+const toggleTitleEdit = async () => {
+  isEditingTitle.value = !isEditingTitle.value
+  if (!isEditingTitle.value) {
+    if (plan.value && plan.value.title !== planTitle.value) {
+        // 既存のステップをすべて削除
+        if (steps.value.length > 0) {
+            const deletePromises = steps.value.map(step => 
+                supabase.from('steps').delete().eq('id', step.id)
+            );
+            await Promise.all(deletePromises);
+            steps.value = [];
+        }
+
+        // 古いプランを削除
+        await supabase.from('plans').delete().eq('id', plan.value.id);
+
+        // 新しいプランをリセットして作成
+        const newPlanId = crypto.randomUUID();
+        const updates = {
+            id: newPlanId,
+            user_id: user.value.id,
+            title: planTitle.value,
+            duration: null, // 期間をリセット
+            created_at: new Date().toISOString()
+        };
+        const { data, error } = await supabase.from('plans').upsert(updates).select().single();
+        if (error) {
+            console.error('プランのリセットエラー:', error);
+        } else {
+            plan.value = data;
+            selectedDuration.value = '';
+            isDurationLocked.value = false;
+            triggerToast('新しい目標を設定しました！');
+        }
+    } else {
+        const result = await upsertPlan();
+        if (result) {
+            triggerToast('保存しました！');
+        }
+    }
+  }
+}
+
+
+// 期間のロック切り替え
+const toggleDurationLock = async () => {
+  isDurationLocked.value = !isDurationLocked.value
+  const result = await upsertPlan()
+  if(result) {
+    triggerToast('期間を確定しました！')
+  }
+}
+
+// ステップのチェックボックス変更
+const handleCheckboxChange = (event, step) => {
+  const checkbox = event.target
+  checkbox.classList.add('animate')
+  setTimeout(() => checkbox.classList.remove('animate'), 300)
+  updateStep(step)
+}
+
+// モーダル関連
+const openModal = (step) => {
+  selectedStep.value = { ...step } // 編集用にコピー
   isModalOpen.value = true
   isEditingStep.value = false
   editedText.value = step.text
@@ -144,84 +371,98 @@ const openModal = (step, index) => {
 const closeModal = () => {
   isModalOpen.value = false
   selectedStep.value = null
-  selectedIndex.value = null
   isEditingStep.value = false
 }
 
 const deleteSelectedStep = () => {
-  if (selectedIndex.value !== null) {
-    steps.value.splice(selectedIndex.value, 1)
-    savePlan()
+  const index = steps.value.findIndex(s => s.id === selectedStep.value.id)
+  if (index !== -1) {
+    deleteStep(selectedStep.value.id, index)
     closeModal()
   }
 }
 
 const saveEditedStep = () => {
-  if (selectedIndex.value !== null && editedText.value.trim()) {
-    steps.value[selectedIndex.value].text = editedText.value.trim()
-    savePlan()
-    isEditingStep.value = false
+  if (editedText.value.trim()) {
+    const stepToUpdate = steps.value.find(s => s.id === selectedStep.value.id)
+    if (stepToUpdate) {
+      stepToUpdate.text = editedText.value.trim()
+      updateStep(stepToUpdate)
+      isEditingStep.value = false
+      closeModal()
+    }
   }
 }
 
-const handleCheckboxChange = (event) => {
-  const checkbox = event.target
-  checkbox.classList.add('animate')
-  setTimeout(() => {
-    checkbox.classList.remove('animate')
-  }, 300)
-  savePlan()
+// テンプレート選択
+const openTemplateModal = () => { isTemplateModalOpen.value = true }
+const closeTemplateModal = () => { isTemplateModalOpen.value = false }
+const selectTemplate = (template) => {
+  planTitle.value = template
+  closeTemplateModal()
 }
 
-const completedSteps = computed(() => steps.value.filter(s => s.completed).length)
+// --- Computed Properties ---
+
+const completedSteps = computed(() => steps.value.filter((s) => s.completed).length)
 const progressPercent = computed(() => {
   if (steps.value.length === 0) return 0
   return Math.round((completedSteps.value / steps.value.length) * 100)
 })
 
-const triggerToast = () => {
-  showToast.value = true
+const remainingDays = computed(() => {
+  if (!isDurationLocked.value || !plan.value?.created_at || !selectedDuration.value) {
+    return null
+  }
+  const start = new Date(plan.value.created_at)
+  const today = new Date()
+  start.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  const endDate = new Date(start.getTime())
+  endDate.setDate(start.getDate() + parseInt(selectedDuration.value, 10))
+
+  const diffTime = endDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  // 期間変更後に残り日数が0以下になったら達成とみなす
+  return diffDays >= 0 ? diffDays : 0
+})
+
+// --- ユーティリティ ---
+
+const triggerToast = (message) => {
+  showToast.value = message
   setTimeout(() => {
     showToast.value = false
   }, 3000)
 }
 
-const savePlan = () => {
-  const planData = {
-    title: planTitle.value,
-    duration: selectedDuration.value,
-    steps: steps.value
-  }
-  localStorage.setItem('myPlan', JSON.stringify(planData))
-  console.log('保存しました:', planData)
-  triggerToast()
-}
-
-const loadPlan = () => {
-  const saved = localStorage.getItem('myPlan')
-  if (!saved) return
-  try {
-    const data = JSON.parse(saved)
-    planTitle.value = data.title
-    selectedDuration.value = data.duration
-    steps.value = data.steps
-    isEditingTitle.value = false
-  } catch (e) {
-    console.warn('読み込みエラー', e)
-  }
-}
+// --- ライフサイクル ---
 
 onMounted(() => {
-  loadPlan()
+  loadData()
 })
-</script>
 
+// 期間が変更されたらDBを更新
+watch(selectedDuration, (newDuration, oldDuration) => {
+    if (newDuration !== oldDuration && isDurationLocked.value) {
+        upsertPlan();
+    }
+});
+</script>
 
 <style scoped>
 @keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.4); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 .step-checkbox.animate {
   animation: pop 0.3s ease;
@@ -265,7 +506,8 @@ onMounted(() => {
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
-input[type="text"], select {
+input[type='text'],
+select {
   background-color: #ffffff;
   border: 1px solid #cce3f5;
   border-radius: 6px;
@@ -317,7 +559,7 @@ input[type="text"], select {
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: background-color 0.3s;
 }
 .step-card.completed {
@@ -383,6 +625,27 @@ input[type="text"], select {
   color: white;
 }
 
+.template-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.template-item {
+  padding: 0.75rem 1rem;
+  border: 1px solid #dceefa;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.template-item:hover {
+  background-color: #eaf6ff;
+  border-color: #91c9f7;
+}
+
 .progress-bar-wrapper {
   margin-bottom: 1rem;
 }
@@ -422,10 +685,43 @@ input[type="text"], select {
   color: white;
   cursor: pointer;
   font-weight: bold;
+  white-space: nowrap; /* ボタンのテキストが改行しないように */
 }
 .goal-input-group button:hover {
   background-color: #f4a9c4;
 }
+
+.duration-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.duration-input-group select[disabled] {
+  background-color: #f1f1f1;
+  color: #666;
+  cursor: not-allowed;
+}
+.duration-input-group button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #f8c8dc;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.duration-input-group button:hover {
+  background-color: #f4a9c4;
+}
+.remaining-days {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #007bff;
+}
+
 .toast-notification {
   position: fixed;
   top: 20px;
@@ -434,7 +730,7 @@ input[type="text"], select {
   color: white;
   padding: 0.75rem 1.25rem;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 2000;
   font-weight: bold;
   transition: opacity 0.3s ease;
