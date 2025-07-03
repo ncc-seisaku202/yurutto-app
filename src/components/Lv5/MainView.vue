@@ -31,6 +31,7 @@ import DiscoverValues from './DiscoverValues.vue'
 import RoadmapCreator from './RoadmapCreator.vue'
 
 // Lv2から再利用
+import MoodInput from '../Lv2/MoodInput.vue'
 import MoodChart from '../Lv2/MoodChart.vue'
 import MoodCalendar from '../Lv2/MoodCalendar.vue'
 
