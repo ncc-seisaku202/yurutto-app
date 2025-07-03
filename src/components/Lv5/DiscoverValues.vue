@@ -238,15 +238,14 @@ const saveValues = async () => {
       .from('user_values')
       .upsert(updates, { onConflict: 'user_id' })
       .select()
-      .single()
 
     if (error) throw error
 
     // UIを更新
-    if (data) {
-        selectedKeywords.value = data.selected_keywords
-        freeText.value = data.free_text
-        savedAt.value = data.updated_at
+    if (data && data.length > 0) {
+        selectedKeywords.value = data[0].selected_keywords
+        freeText.value = data[0].free_text
+        savedAt.value = data[0].updated_at
     }
 
     isEditMode.value = false
@@ -312,16 +311,13 @@ const fetchUserValues = async () => {
       .from('user_values')
       .select('selected_keywords, free_text, updated_at')
       .eq('user_id', user.value.id)
-      .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116はレコードがない場合のエラーコード
-      throw error
-    }
+    if (error) throw error
 
-    if (data) {
-      selectedKeywords.value = data.selected_keywords || []
-      freeText.value = data.free_text || ''
-      savedAt.value = data.updated_at
+    if (data && data.length > 0) {
+      selectedKeywords.value = data[0].selected_keywords || []
+      freeText.value = data[0].free_text || ''
+      savedAt.value = data[0].updated_at
     } else {
       // データがない場合は初期状態
       selectedKeywords.value = []
