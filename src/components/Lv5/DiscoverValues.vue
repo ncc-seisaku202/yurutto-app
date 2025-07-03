@@ -1,7 +1,10 @@
 <template>
   <div class="discover-values">
+    <!-- Loading Indicator -->
+    <div v-if="loading" class="loading-indicator">データを読み込んでいます...</div>
+
     <!-- 選択モード -->
-    <div v-if="!hasSavedValues || isEditMode" class="selection-mode">
+    <div v-else-if="!savedAt || isEditMode" class="selection-mode">
       <div class="header-section">
         <h2 class="section-title">🌱 わたしの価値観を見つける</h2>
         <p class="description">
@@ -80,7 +83,7 @@
     </div>
 
     <!-- 結果表示モード -->
-    <div v-else class="result-mode">
+    <div v-else-if="savedAt" class="result-mode">
       <div class="header-section">
         <h2 class="section-title">✨ あなたの価値観</h2>
         <p class="description">
@@ -132,33 +135,37 @@
       </div>
     </div>
 
-    <!-- 保存成功メッセージ -->
+    <!-- Toast Notification -->
     <transition name="fade">
-      <div v-if="showSaveMessage" class="save-message">
-        ✨ 価値観を{{ isEditMode ? '更新' : '保存' }}しました！
+      <div v-if="showToast" class="toast-notification" :class="{ 'error': toastMessage.includes('失敗') || toastMessage.includes('エラー') }">
+        {{ toastMessage }}
       </div>
     </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase'
 
-// リアクティブデータ
+// -- Data Refs --
+const user = ref(null)
 const selectedKeywords = ref([])
 const freeText = ref('')
-const showSaveMessage = ref(false)
+const savedAt = ref(null) // DBからはupdated_atを利用
+
+// -- UI State Refs --
+const loading = ref(true)
+const showSaveMessage = ref(false) // これはトースト通知に置き換える
 const isEditMode = ref(false)
-const savedAt = ref(null)
+const toastMessage = ref('')
+const showToast = ref(false)
 
 // 編集前の状態を保存（キャンセル用）
 const originalSelectedKeywords = ref([])
 const originalFreeText = ref('')
 
-// 保存された価値観があるかどうかを判定
-const hasSavedValues = computed(() => {
-  return (selectedKeywords.value.length > 0 || freeText.value.trim() !== '') && savedAt.value !== null
-})
+
 
 // 価値観キーワードリスト
 const keywords = [
@@ -214,28 +221,48 @@ const getKeywordIcon = (keyword) => {
   return keywordIcons[keyword] || "✨"
 }
 
-const saveValues = () => {
-  // 将来的にSupaBaseに保存する処理
-  // 現在はLocalStorageに保存
-  const now = new Date().toISOString()
-  const valuesData = {
-    selectedKeywords: selectedKeywords.value,
-    freeText: freeText.value,
-    savedAt: now
+const saveValues = async () => {
+  if (!user.value) {
+    triggerToast('ログインしていません', 'error')
+    return
   }
-  
-  localStorage.setItem('discoveredValues', JSON.stringify(valuesData))
-  
-  // 保存日時を更新
-  savedAt.value = now
-  
-  // 編集モードを終了
-  isEditMode.value = false
-  
-  // 保存成功メッセージを表示
-  showSaveMessage.value = true
+  try {
+    const updates = {
+      user_id: user.value.id,
+      selected_keywords: selectedKeywords.value,
+      free_text: freeText.value,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
+      .from('user_values')
+      .upsert(updates, { onConflict: 'user_id' })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // UIを更新
+    if (data) {
+        selectedKeywords.value = data.selected_keywords
+        freeText.value = data.free_text
+        savedAt.value = data.updated_at
+    }
+
+    isEditMode.value = false
+    triggerToast(isEditMode.value ? '価値観を更新しました！' : '価値観を保存しました！')
+
+  } catch (error) {
+    console.error('Error saving values:', error.message)
+    triggerToast('保存に失敗しました', 'error')
+  }
+}
+
+const triggerToast = (message, type = 'success') => {
+  toastMessage.value = message
+  showToast.value = true
   setTimeout(() => {
-    showSaveMessage.value = false
+    showToast.value = false
   }, 3000)
 }
 
@@ -274,19 +301,54 @@ const formatSavedDate = (dateString) => {
   })
 }
 
-// 初期化時に保存されたデータを読み込み
-const loadSavedValues = () => {
-  const saved = localStorage.getItem('discoveredValues')
-  if (saved) {
-    const data = JSON.parse(saved)
-    selectedKeywords.value = data.selectedKeywords || []
-    freeText.value = data.freeText || ''
-    savedAt.value = data.savedAt || null
+// -- Supabase Functions --
+
+// 1. Fetch user values from Supabase
+const fetchUserValues = async () => {
+  if (!user.value) return
+  loading.value = true
+  try {
+    const { data, error } = await supabase
+      .from('user_values')
+      .select('selected_keywords, free_text, updated_at')
+      .eq('user_id', user.value.id)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116はレコードがない場合のエラーコード
+      throw error
+    }
+
+    if (data) {
+      selectedKeywords.value = data.selected_keywords || []
+      freeText.value = data.free_text || ''
+      savedAt.value = data.updated_at
+    } else {
+      // データがない場合は初期状態
+      selectedKeywords.value = []
+      freeText.value = ''
+      savedAt.value = null
+    }
+  } catch (error) {
+    console.error('Error fetching user values:', error.message)
+    triggerToast('データの読み込みに失敗しました', 'error')
+  } finally {
+    loading.value = false
   }
 }
 
-// コンポーネント初期化時に実行
-loadSavedValues()
+// -- Lifecycle Hooks --
+
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    user.value = session.user
+    await fetchUserValues()
+  } else {
+    console.log('User not logged in')
+    loading.value = false
+    triggerToast('ログインしてください', 'error')
+  }
+})
 </script>
 
 <style scoped>
@@ -641,7 +703,14 @@ loadSavedValues()
   transform: translateY(-1px);
 }
 
-.save-message {
+.loading-indicator {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #718096;
+}
+
+.toast-notification {
   position: fixed;
   top: 2rem;
   right: 2rem;
@@ -652,6 +721,11 @@ loadSavedValues()
   box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
   font-weight: 500;
   z-index: 1000;
+}
+
+.toast-notification.error {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3);
 }
 
 @keyframes fadeIn {
