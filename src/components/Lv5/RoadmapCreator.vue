@@ -7,8 +7,11 @@
       </p>
     </div>
 
+    <!-- Loading Indicator -->
+    <div v-if="loading" class="loading-indicator">データを読み込んでいます...</div>
+
     <!-- 価値観が未設定の場合の案内 -->
-    <div v-if="discoveredValues.length === 0" class="no-values-message">
+    <div v-else-if="!loading && discoveredValues.length === 0" class="no-values-message">
       <div class="message-card">
         <div class="message-icon">🌱</div>
         <h3>まずは価値観を見つけましょう</h3>
@@ -196,22 +199,38 @@
       </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <transition name="fade">
+      <div v-if="showToast" class="toast-notification" :class="{ 'error': toastMessage.includes('失敗'), 'info': toastMessage.includes('リセット') }">
+        {{ toastMessage }}
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { supabase } from '@/lib/supabase'
 
-// リアクティブデータ
+// -- Data Refs --
+const user = ref(null)
 const discoveredValues = ref([])
 const roadmapData = ref({
   year1: { vision: '', relatedValues: [] },
   year3: { vision: '', relatedValues: [] },
   year5: { vision: '', relatedValues: [] }
 })
+const savedAt = ref(null) // DBからはupdated_atを利用
+
+// -- UI State Refs --
+const loading = ref(true)
 const isEditMode = ref(false)
-const savedAt = ref(null)
-const lastKnownValues = ref([])
+const toastMessage = ref('')
+const showToast = ref(false)
+
+// -- Supabase Refs --
+let subscription = null
 
 // 編集前の状態を保存（キャンセル用）
 const originalRoadmapData = ref({})
@@ -265,19 +284,7 @@ const getValueIcon = (value) => {
   return valueIcons[value] || "✨"
 }
 
-const saveRoadmap = () => {
-  const now = new Date().toISOString()
-  const roadmapSaveData = {
-    roadmapData: roadmapData.value,
-    savedAt: now
-  }
-  
-  localStorage.setItem('roadmapData', JSON.stringify(roadmapSaveData))
-  savedAt.value = now
-  isEditMode.value = false
-  
-  alert('道しるべマップを保存しました！')
-}
+
 
 const resetRoadmap = () => {
   if (confirm('入力した内容をリセットしますか？')) {
@@ -301,6 +308,7 @@ const cancelEdit = () => {
 
 
 const formatSavedDate = (dateString) => {
+  if (!dateString) return ''
   const date = new Date(dateString)
   return date.toLocaleDateString('ja-JP', {
     year: 'numeric',
@@ -311,82 +319,152 @@ const formatSavedDate = (dateString) => {
   })
 }
 
-// 価値観変更を検知する関数
-const checkValuesChange = () => {
-  const saved = localStorage.getItem('discoveredValues')
-  if (saved) {
-    const data = JSON.parse(saved)
-    const currentValues = data.selectedKeywords || []
-    
-    // 初回読み込み時は比較しない
-    if (lastKnownValues.value.length === 0) {
-      lastKnownValues.value = [...currentValues]
-      discoveredValues.value = currentValues
-      return
-    }
-    
-    // 価値観が変更されているかチェック
-    const hasChanged = JSON.stringify(lastKnownValues.value.sort()) !== JSON.stringify(currentValues.sort())
-    
-    if (hasChanged && hasSavedRoadmap.value) {
-      const confirmMessage = `価値観が変更されました。\n道しるべマップをリセットして新しく作り直しますか？\n\n※「キャンセル」を選択すると価値観の変更は反映されません。`
-      
-      if (confirm(confirmMessage)) {
-        // 道しるべマップをリセット
-        roadmapData.value = {
-          year1: { vision: '', relatedValues: [] },
-          year3: { vision: '', relatedValues: [] },
-          year5: { vision: '', relatedValues: [] }
-        }
-        savedAt.value = null
-        localStorage.removeItem('roadmapData')
-        
-        // 新しい価値観を適用
-        discoveredValues.value = currentValues
-        lastKnownValues.value = [...currentValues]
-        
-        alert('道しるべマップをリセットしました。新しい価値観で作り直してください。')
-      }
+// -- Supabase Functions --
+
+// 1. Fetch initial data (values and roadmap)
+const fetchInitialData = async () => {
+  if (!user.value) return
+  loading.value = true
+  try {
+    // Fetch both user_values and roadmaps in parallel
+    const [valuesRes, roadmapRes] = await Promise.all([
+      supabase.from('user_values').select('selected_keywords').eq('user_id', user.value.id),
+      supabase.from('roadmaps').select('roadmap_data, updated_at').eq('user_id', user.value.id)
+    ])
+
+    if (valuesRes.error) throw valuesRes.error
+    if (roadmapRes.error) throw roadmapRes.error
+
+    // Process user values
+    if (valuesRes.data && valuesRes.data.length > 0) {
+      discoveredValues.value = valuesRes.data[0].selected_keywords || []
     } else {
-      // 変更がない場合、または道しるべマップが未作成の場合は通常更新
-      discoveredValues.value = currentValues
-      lastKnownValues.value = [...currentValues]
+      discoveredValues.value = []
     }
+
+    // Process roadmap data
+    if (roadmapRes.data && roadmapRes.data.length > 0) {
+      roadmapData.value = roadmapRes.data[0].roadmap_data || roadmapData.value
+      savedAt.value = roadmapRes.data[0].updated_at
+    } else {
+      savedAt.value = null
+    }
+
+  } catch (error) {
+    console.error('Error fetching initial data:', error.message)
+    triggerToast('データの読み込みに失敗しました', 'error')
+  } finally {
+    loading.value = false
   }
 }
 
-// 価値観データを読み込み
-const loadDiscoveredValues = () => {
-  checkValuesChange()
-}
+// 2. Save (Upsert) roadmap
+const saveRoadmap = async () => {
+  if (!user.value) return triggerToast('ログインしていません', 'error')
 
-// 道しるべマップデータを読み込み
-const loadRoadmapData = () => {
-  const saved = localStorage.getItem('roadmapData')
-  if (saved) {
-    const data = JSON.parse(saved)
-    roadmapData.value = data.roadmapData || {
-      year1: { vision: '', relatedValues: [] },
-      year3: { vision: '', relatedValues: [] },
-      year5: { vision: '', relatedValues: [] }
+  // バリデーション: すべての「ありたい姿」が入力されているか確認
+  const allVisionsFilled = periods.every(period => roadmapData.value[period.key].vision.trim() !== '')
+  if (!allVisionsFilled) {
+    triggerToast('すべての期間の「ありたい姿」を入力してください', 'error')
+    return
+  }
+
+  try {
+    const updates = {
+      user_id: user.value.id,
+      roadmap_data: roadmapData.value,
+      updated_at: new Date().toISOString(),
     }
-    savedAt.value = data.savedAt || null
+
+    const { data, error } = await supabase
+      .from('roadmaps')
+      .upsert(updates, { onConflict: 'user_id' })
+      .select('updated_at')
+      .single()
+
+    if (error) throw error
+
+    savedAt.value = data.updated_at
+    isEditMode.value = false
+    triggerToast('道しるべマップを保存しました！')
+
+  } catch (error) {
+    console.error('Error saving roadmap:', error.message)
+    triggerToast('保存に失敗しました', 'error')
   }
 }
 
-// 価値観のリアルタイム監視
-const startValuesWatcher = () => {
-  // 5秒ごとに価値観の変更をチェック
-  setInterval(() => {
-    checkValuesChange()
-  }, 5000)
+// 3. Handle real-time value changes
+const handleValueChange = (payload) => {
+  const newValues = payload.new.selected_keywords || []
+  const oldValues = payload.old.selected_keywords || []
+
+  // Only proceed if values have actually changed
+  if (JSON.stringify(newValues.sort()) === JSON.stringify(oldValues.sort())) {
+    return
+  }
+
+  if (hasSavedRoadmap.value) {
+    const confirmMessage = `価値観が変更されました.\n道しるべマップをリセットして新しく作り直しますか？\n\n※「キャンセル」を選択すると、マップは以前の価値観に基づいたままになります.`
+    if (confirm(confirmMessage)) {
+      // Reset roadmap data and UI
+      roadmapData.value = {
+        year1: { vision: '', relatedValues: [] },
+        year3: { vision: '', relatedValues: [] },
+        year5: { vision: '', relatedValues: [] }
+      }
+      savedAt.value = null
+      isEditMode.value = false
+      // Also delete the roadmap from DB
+      supabase.from('roadmaps').delete().eq('user_id', user.value.id).then()
+      triggerToast('道しるべマップをリセットしました。新しい価値観で作り直してください。', 'info')
+    }
+  }
+  // Update the displayed values regardless of user choice
+  discoveredValues.value = newValues
 }
 
-// コンポーネント初期化時に実行
-onMounted(() => {
-  loadDiscoveredValues()
-  loadRoadmapData()
-  startValuesWatcher()
+// 4. Setup real-time subscription
+const setupSubscription = () => {
+  if (subscription) return // Avoid duplicate subscriptions
+  subscription = supabase
+    .channel('public:user_values')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'user_values', filter: `user_id=eq.${user.value.id}` },
+      handleValueChange
+    )
+    .subscribe()
+}
+
+// -- UI Helper Functions --
+
+const triggerToast = (message, type = 'success') => {
+  toastMessage.value = message
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 4000)
+}
+
+// -- Lifecycle Hooks --
+
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    user.value = session.user
+    await fetchInitialData()
+    setupSubscription()
+  } else {
+    loading.value = false
+    triggerToast('ログインしてください', 'error')
+  }
+})
+
+onUnmounted(() => {
+  if (subscription) {
+    supabase.removeChannel(subscription)
+  }
 })
 </script>
 
@@ -889,6 +967,43 @@ onMounted(() => {
 .edit-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(237, 137, 54, 0.4);
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #718096;
+}
+
+.toast-notification {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+  font-weight: 500;
+  z-index: 1000;
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toast-notification.error {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+}
+
+.toast-notification.info {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s, transform 0.5s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
 @keyframes fadeIn {
