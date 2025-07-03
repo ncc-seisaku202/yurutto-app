@@ -284,19 +284,7 @@ const getValueIcon = (value) => {
   return valueIcons[value] || "✨"
 }
 
-const saveRoadmap = () => {
-  const now = new Date().toISOString()
-  const roadmapSaveData = {
-    roadmapData: roadmapData.value,
-    savedAt: now
-  }
-  
-  localStorage.setItem('roadmapData', JSON.stringify(roadmapSaveData))
-  savedAt.value = now
-  isEditMode.value = false
-  
-  alert('道しるべマップを保存しました！')
-}
+
 
 const resetRoadmap = () => {
   if (confirm('入力した内容をリセットしますか？')) {
