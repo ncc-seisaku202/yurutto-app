@@ -362,6 +362,13 @@ const fetchInitialData = async () => {
 const saveRoadmap = async () => {
   if (!user.value) return triggerToast('ログインしていません', 'error')
 
+  // バリデーション: すべての「ありたい姿」が入力されているか確認
+  const allVisionsFilled = periods.every(period => roadmapData.value[period.key].vision.trim() !== '')
+  if (!allVisionsFilled) {
+    triggerToast('すべての期間の「ありたい姿」を入力してください', 'error')
+    return
+  }
+
   try {
     const updates = {
       user_id: user.value.id,
