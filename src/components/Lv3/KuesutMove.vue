@@ -1,90 +1,99 @@
 <template>
-  <div class="p-4 max-w-2xl mx-auto">
-  <div class="space-y-4 quest-form">
-    <h1 class="text-2xl font-bold mb-4">⚔クエスト作成</h1>
+  <div class="my-plan">
+    <h1 class="section-title">⚔ クエスト作成</h1>
 
-    <!-- テンプレート選択 -->
-    <div class="mb-4">
-      <label class="block mb-1">テンプレート選択:</label>
-      <select v-model="selectedTemplateId" @change="applyTemplate" class="border rounded p-2 w-full">
-        <option disabled value="">テンプレートを選んでください</option>
-        <option v-for="template in templates" :key="template.id" :value="template.id">
-          {{ template.name }}
-        </option>
-      </select>
-    </div>
-
-    <!-- クエスト作成フォーム + 進捗管理 -->
-    
-      <div>
-        <label class="block">クエスト名</label>
-        <input v-model="quest.name" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: 毎日早起きチャレンジ" />
-      </div>
-      <div>
-        <label class="block">期間</label>
-        <input v-model="quest.duration" type="text" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: 7日間" />
-      </div>
-      <div>
-        <label class="block">内容メモ</label>
-        <textarea v-model="quest.memo" class="border px-3 py-[0.4rem] w-full rounded" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
-      </div>
-      <div>
-        <label class="block">難易度</label>
-        <select v-model="quest.difficulty" class="border px-3 py-[0.4rem] w-full rounded">
-          <option disabled value="">選択してください</option>
-          <option>簡単</option>
-          <option>普通</option>
-          <option>難しい</option>
+    <div class="card-section">
+      <!-- テンプレート選択 -->
+      <div class="form-group">
+        <label for="template-select">テンプレート選択</label>
+        <select id="template-select" v-model="selectedTemplateId" @change="applyTemplate">
+          <option disabled value="">テンプレートを選んでください</option>
+          <option value="reset">選択を解除</option>
+          <option v-for="template in templates" :key="template.id" :value="template.id">
+            {{ template.name }}
+          </option>
         </select>
       </div>
-      <div>
-        <label class="block">ごほうび設定</label>
-        <input v-model="quest.reward" class="border px-3 py-[0.4rem] w-full rounded" placeholder="例: ケーキを食べる！" />
-      </div>
+    </div>
 
-      <!-- 進捗管理（フォーム内に移動） -->
-      <div class="mt-4">
-        <label class="block mb-2">進捗管理</label>
+    <div class="card-section">
+      <!-- クエスト作成フォーム -->
+      <div class="form-group">
+        <label for="quest-name">クエスト名</label>
+        <input id="quest-name" v-model="quest.name" placeholder="例: 毎日早起きチャレンジ" />
+      </div>
+      <div class="form-group">
+        <label for="quest-duration">期間</label>
+        <select id="quest-duration" v-model.number="quest.duration">
+          <option disabled value="">選択してください</option>
+          <option v-for="day in 7" :key="day" :value="day">{{ day }}日間</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="quest-memo">内容メモ</label>
+        <textarea id="quest-memo" v-model="quest.memo" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
+      </div>
+    </div>
+
+    <div class="card-section">
+      <!-- 進捗管理 -->
+      <div class="form-group">
+        <label>進捗管理</label>
         <button
           @click="toggleCompletion"
           :disabled="isToggleDisabled"
-          :class="[
-            'px-4 py-[0.6rem] rounded w-full text-white font-bold transition-colors',
-            quest.completed
-              ? 'bg-red-500 border-2 border-red-600 hover:bg-red-600'
-              : 'bg-blue-500 border-2 border-transparent hover:bg-blue-600',
-            isToggleDisabled ? 'opacity-50 cursor-not-allowed' : ''
-          ]"
+          class="progress-button"
+          :class="{ completed: quest.completed, disabled: isToggleDisabled }"
         >
           {{ quest.completed ? '達成済み ✔' : '未達成' }}
         </button>
       </div>
     </div>
 
+    <!-- クエスト作成ボタン -->
+    <div class="mt-4">
+      <button @click="createQuest" class="create-quest-button">
+        クエストを作成
+      </button>
+    </div>
 
     <!-- 開発者用: リセットボタン -->
-    <div class="mt-2">
-      <button @click="resetProgress" class="w-full bg-red-500 text-white px-4 py-2 rounded">
+    <div class="mt-4">
+      <button @click="resetProgress" class="reset-button">
         🔄 進捗をリセット（開発用）
       </button>
     </div>
 
     <!-- 達成時フィードバック -->
-    <div v-if="quest.completed" class="mt-4 p-4 bg-green-100 rounded border border-green-400">
-      <h2 class="font-bold text-lg text-green-800">🎉 クエスト達成！</h2>
+    <div v-if="quest.completed" class="feedback-card">
+      <h2 class="feedback-title">🎉 クエスト達成！</h2>
       <p>経験値 +100</p>
-      <p>祝福メッセージ: {{ randomMessage }}</p> 
-      <div class="mt-2">
-        <button @click="claimReward" class="bg-yellow-400 px-4 py-2 rounded font-bold w-full">
-          🎁 ごほうびゲット！
-        </button>
-        <p v-if="rewardClaimed" class="mt-2 text-sm">ごほうび: {{ quest.reward }}</p>
-      </div>
+      <p>祝福メッセージ: {{ randomMessage }}</p>
     </div>
+
     <!-- 累計経験値で木を成長表示 -->
     <div class="mt-10 flex justify-center">
       <SeityouView :exp="totalExp" />
     </div>
+
+    <!-- 確認モーダル -->
+    <div v-if="isConfirmModalVisible" class="modal-overlay" @click.self="handleConfirmCompletion(false)">
+      <div class="modal-content">
+        <h3>クエスト達成</h3>
+        <p>今日のクエストを達成しましたか？</p>
+        <div class="modal-buttons">
+          <button @click="handleConfirmCompletion(true)" class="confirm-button">はい</button>
+          <button @click="handleConfirmCompletion(false)" class="cancel-button">いいえ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <transition name="fade">
+      <div v-if="showToast" class="toast-notification">
+        {{ toastMessage }}
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -96,45 +105,62 @@ export default {
   components: { SeityouView },
   data() {
     return {
+      isConfirmModalVisible: false,
+      showToast: false,
+      toastMessage: '',
       quest: {
         name: '',
         duration: '',
         memo: '',
-        difficulty: '',
-        reward: '',
         completed: false,
       },
-      rewardClaimed: false,
       selectedTemplateId: '',
       totalExp: 0,
       lastCompletionDate: '',
-      randomMessage: '', // ← 追加
-    successMessages: [ // ← 追加
-      "よくがんばりました！",
-      "すばらしい努力です！",
-      "継続は力なり！",
-      "あなたは今日も輝いています！",
-      "その調子で続けていこう！",
-      "達成おめでとうございます！"
-    ],
+      randomMessage: '',
+      successMessages: [
+        "よくがんばりました！",
+        "すばらしい努力です！",
+        "継続は力なり！",
+        "あなたは今日も輝いています！",
+        "その調子で続けていこう！",
+        "達成おめでとうございます！"
+      ],
       templates: [
         {
           id: 'template1',
           name: '朝活クエスト',
           nameDefault: '朝6時に起きる',
-          duration: '7日間',
+          duration: 7,
           memo: '毎朝6時に起きて散歩する',
-          difficulty: '普通',
-          reward: 'コーヒータイムを満喫',
         },
         {
           id: 'template2',
           name: '学習クエスト',
           nameDefault: '毎日30分英語',
-          duration: '14日間',
+          duration: 7,
           memo: '英語学習アプリを30分使う',
-          difficulty: '難しい',
-          reward: 'ごほうびマンガ1冊',
+        },
+        {
+          id: 'template3',
+          name: 'リフレッシュクエスト',
+          nameDefault: '5分間ストレッチ',
+          duration: 3,
+          memo: '仕事や勉強の合間に体をほぐそう',
+        },
+        {
+          id: 'template4',
+          name: '生活習慣クエスト',
+          nameDefault: '寝る前に日記を書く',
+          duration: 7,
+          memo: '今日の良かったこと、感じたことをひとことでもOK',
+        },
+        {
+          id: 'template5',
+          name: '健康クエスト',
+          nameDefault: '毎日コップ1杯の水を飲む',
+          duration: 5,
+          memo: '起床後や食前など、タイミングを決めてみよう',
         },
       ],
     };
@@ -147,134 +173,290 @@ export default {
   },
   methods: {
     applyTemplate() {
+      if (this.selectedTemplateId === 'reset') {
+        this.quest.name = '';
+        this.quest.duration = '';
+        this.quest.memo = '';
+        this.selectedTemplateId = '';
+        return;
+      }
+
       const template = this.templates.find(t => t.id === this.selectedTemplateId);
       if (template) {
         this.quest.name = template.nameDefault;
         this.quest.duration = template.duration;
         this.quest.memo = template.memo;
-        this.quest.difficulty = template.difficulty;
-        this.quest.reward = template.reward;
       }
     },
     toggleCompletion() {
-  if (this.lastCompletedDate === this.todayDate()) {
-    alert('今日はすでに完了しています！');
-    return;
-  }
+      if (this.lastCompletionDate === this.todayDate()) {
+        alert('今日はすでに完了しています！');
+        return;
+      }
+      this.isConfirmModalVisible = true;
+    },
+    handleConfirmCompletion(confirmed) {
+      if (confirmed) {
+        this.quest.completed = true;
+        this.lastCompletionDate = this.todayDate();
+        this.totalExp += 100;
 
-  if (!confirm('今日のクエストを達成しましたか？')) {
-    return;
-  }
-
-  this.quest.completed = true;
-  this.lastCompletedDate = this.todayDate();
-  this.totalExp += 100;
-
-  // ランダム祝福メッセージ
-  const i = Math.floor(Math.random() * this.successMessages.length);
-  this.randomMessage = this.successMessages[i];
-},
-    claimReward() {
-      this.rewardClaimed = true;
+        // ランダム祝福メッセージ
+        const i = Math.floor(Math.random() * this.successMessages.length);
+        this.randomMessage = this.successMessages[i];
+      }
+      this.isConfirmModalVisible = false;
     },
     resetProgress() {
       this.quest.completed = false;
-      this.rewardClaimed = false;
       this.totalExp = 0;
       this.lastCompletionDate = '';
       alert('進捗がリセットされました');
     },
+    createQuest() {
+      // ここにクエスト作成ロジック（Supabase連携など）が入りますが、今回はToast表示のみ
+      this.triggerToast('クエストを作成しました！');
+    },
     todayDate() {
       return new Date().toISOString().split('T')[0];
+    },
+    triggerToast(message) {
+      this.toastMessage = message;
+      this.showToast = true;
+      setTimeout(() => {
+        this.showToast = false;
+      }, 3000);
     },
   },
 };
 </script>
 
 <style scoped>
-.container {
-  max-width: 400px;
-  margin: 3rem auto;
+.my-plan {
+  background: #F0F4F8;
+  border-radius: 12px;
   padding: 2rem;
-  background-color: #ff9e3e;
-  box-shadow: 0 0 15px rgba(255, 150, 50, 0.5);
-  border-radius: 1rem;
-  font-family: sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  color: #5A6A7A;
+  width: 90%;
+  margin: 2rem auto;
 }
 
-h1 {
-  font-size: 1.5rem;
+.section-title {
+  font-size: 1.8rem;
   font-weight: bold;
+  color: #5A6A7A;
+  margin-bottom: 1.5rem;
   text-align: center;
-  margin-bottom: 2rem;
 }
 
-label {
+.card-section {
+  background-color: #E0F2F7;
+  border: 2px solid #C3D9EE;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(195, 217, 238, 0.3);
+  margin-bottom: 2rem;
+  transition: box-shadow 0.3s ease;
+}
+
+.card-section:hover {
+  box-shadow: 0 4px 12px rgba(195, 217, 238, 0.4);
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
   display: block;
-  margin-bottom: 0.4rem;
-  font-weight: bold;
-  color: #222;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #4A5A6A;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  padding: 0.6rem;
+  padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid #C3D9EE;
   border-radius: 8px;
-  margin-bottom: 1.5rem;
   box-sizing: border-box;
+  background-color: #E0F2F7;
+  color: #333;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-button {
-  display: block;
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #A0C4E2;
+  box-shadow: 0 0 0 3px rgba(160, 196, 226, 0.4);
+}
+
+.progress-button {
   width: 100%;
-  background-color: #666;
-  color: white;
+  padding: 0.8rem 1rem;
   border: none;
-  padding: 0.75rem;
+  border-radius: 8px;
   font-weight: bold;
-  border-radius: 8px;
+  color: white;
   cursor: pointer;
-  margin-bottom: 1rem;
-}
-button:hover {
-  background-color: #444;
+  transition: background-color 0.3s, transform 0.2s;
+  background-color: #6A99D0; /* 未達成の色 */
 }
 
-.reward-button {
-  background-color: #facc15;
-  color: black;
-  margin-top: 1rem;
+.progress-button.completed {
+  background-color: #8BC34A; /* 達成済みの色 */
 }
 
-.feedback {
-  background-color: #e6ffed;
-  border: 1px solid #66bb6a;
-  padding: 1rem;
-  border-radius: 10px;
-  margin-top: 2rem;
-  text-align: center;
-}
-.quest-form {
-  background-color: #ff9e3e;
-  box-shadow: 0 0 12px rgba(255, 140, 30, 0.4);
-  border-radius: 1rem;
-  padding: 1.5rem;
+.progress-button.disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
 }
 
-/* 入力欄の高さ調整 */
-.quest-form input,
-.quest-form select,
-.quest-form textarea {
-  padding: 0.4rem 0.6rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
+.progress-button:not(.disabled):hover {
+  transform: translateY(-2px);
+}
+
+.reset-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
   border-radius: 8px;
-  box-sizing: border-box;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  background-color: #FFB74D; /* リセットボタンの色 */
+  transition: background-color 0.3s;
 }
 
-</style>
+.reset-button:hover {
+  background-color: #FFA726;
+}
+
+.create-quest-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  background-color: #4CAF50; /* 作成ボタンの色 */
+  transition: background-color 0.3s;
+}
+
+.create-quest-button:hover {
+  background-color: #43A047;
+}
+
+.feedback-card {
+  background-color: #E8F5E9;
+  border: 2px solid #A5D6A7;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: 2rem;
+  color: #4CAF50;
+}
+
+.feedback-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+/* モーダル関連のスタイル */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(195, 217, 238, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #E0F2F7;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(195, 217, 238, 0.4);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #4A5A6A;
+}
+
+.modal-content p {
+  margin-bottom: 1.5rem;
+  color: #6A7A8A;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.modal-buttons button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.modal-buttons .confirm-button {
+  background-color: #8BC34A; /* 緑色 */
+  color: white;
+}
+
+.modal-buttons .confirm-button:hover {
+  background-color: #7CB342;
+}
+
+.modal-buttons .cancel-button {
+  background-color: #FF7043; /* 赤色 */
+  color: white;
+}
+
+.modal-buttons .cancel-button:hover {
+  background-color: #F4511E;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Toast Transition */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+  opacity: 0;
+}
