@@ -111,16 +111,16 @@ import SeityouView from './SeityouView.vue';
   memo: '',
   start_date: null,
   completed_dates: [],
-  total_exp: 0,
 });
 const user = ref(null);
 const isLoading = ref(true);
+const userTotalExp = ref(0); // total_expを保持するための新しいref
 
 const isConfirmModalVisible = ref(false);
 const showToast = ref(false);
 const toastMessage = ref('');
 const selectedTemplateId = ref('');
-const totalExp = computed(() => quest.value.total_exp);
+const totalExp = computed(() => userTotalExp.value); // totalExpをuserTotalExpから取得
 const randomMessage = ref('');
 
 const successMessages = [
@@ -203,18 +203,43 @@ const remainingDays = computed(() => {
   }
   user.value = session.user;
 
-  const { data, error } = await supabase
+  // クエストデータを読み込み
+  const { data: questData, error: questError } = await supabase
     .from('quests')
-    .select('*, total_exp')
+    .select('*')
     .eq('user_id', user.value.id)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116は行がない場合のエラー
-    console.error('クエストの読み込みエラー:', error);
+  if (questError && questError.code !== 'PGRST116') { // PGRST116は行がない場合のエラー
+    console.error('クエストの読み込みエラー:', questError);
     triggerToast('クエストの読み込みに失敗しました。');
-  } else if (data) {
-    quest.value = { ...data, completed_dates: data.completed_dates || [], total_exp: data.total_exp || 0 };
+  } else if (questData) {
+    quest.value = { ...questData, completed_dates: questData.completed_dates || [] };
   }
+
+  // プロフィールデータを読み込み (total_expを含む)
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('total_exp')
+    .eq('id', user.value.id)
+    .single();
+
+  if (profileError && profileError.code !== 'PGRST116') {
+    console.error('プロフィールデータの読み込みエラー:', profileError);
+    triggerToast('経験値の読み込みに失敗しました。');
+  } else if (profileData) {
+    userTotalExp.value = profileData.total_exp || 0;
+  } else {
+    // プロフィールが存在しない場合は新規作成
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({ id: user.value.id, user_exp: 0, total_exp: 0 });
+    if (insertError) {
+      console.error('プロフィールデータの新規作成エラー:', insertError);
+      triggerToast('プロフィールデータの初期化に失敗しました。');
+    }
+  }
+
   isLoading.value = false;
 };
 
@@ -232,7 +257,6 @@ const upsertQuest = async () => {
     memo: quest.value.memo,
     start_date: quest.value.start_date || todayDate(),
     completed_dates: quest.value.completed_dates || [],
-    total_exp: quest.value.total_exp || 0,
   };
 
   // 新規作成の場合、IDをnullにして自動生成させる
@@ -289,13 +313,24 @@ const handleConfirmCompletion = async (confirmed) => {
     const today = todayDate();
     if (!quest.value.completed_dates.includes(today)) {
       quest.value.completed_dates.push(today);
-      quest.value.total_exp += 100; // 経験値を加算
+      userTotalExp.value += 100; // 経験値を加算
+
+      // profilesテーブルのtotal_expを更新
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ total_exp: userTotalExp.value })
+        .eq('id', user.value.id);
+
+      if (profileUpdateError) {
+        console.error('プロフィール経験値の更新エラー:', profileUpdateError);
+        triggerToast('経験値の更新に失敗しました。');
+      }
 
       // ランダム祝福メッセージ
       const i = Math.floor(Math.random() * successMessages.length);
       randomMessage.value = successMessages[i];
 
-      await upsertQuest(); // DBを更新
+      await upsertQuest(); // クエストDBを更新
     }
   }
   isConfirmModalVisible.value = false;
@@ -304,7 +339,19 @@ const handleConfirmCompletion = async (confirmed) => {
 const resetProgress = async () => {
   quest.value.completed_dates = [];
   quest.value.start_date = todayDate();
-  quest.value.total_exp = 0;
+  userTotalExp.value = 0;
+
+  // profilesテーブルのtotal_expをリセット
+  const { error: profileUpdateError } = await supabase
+    .from('profiles')
+    .update({ total_exp: 0 })
+    .eq('id', user.value.id);
+
+  if (profileUpdateError) {
+    console.error('プロフィール経験値のリセットエラー:', profileUpdateError);
+    triggerToast('経験値のリセットに失敗しました。');
+  }
+
   await upsertQuest();
   alert('進捗がリセットされました');
 };
