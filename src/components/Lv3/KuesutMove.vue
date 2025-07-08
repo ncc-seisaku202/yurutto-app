@@ -33,39 +33,42 @@
         <label for="quest-memo">内容メモ</label>
         <textarea id="quest-memo" v-model="quest.memo" rows="3" placeholder="クエストの詳細を書いてください"></textarea>
       </div>
-    </div>
 
-    <div class="card-section">
-      <!-- 進捗管理 -->
-      <div class="form-group">
-        <label>進捗管理</label>
-        <button
-          @click="toggleCompletion"
-          :disabled="isToggleDisabled"
-          class="progress-button"
-          :class="{ completed: quest.completed, disabled: isToggleDisabled }"
-        >
-          {{ quest.completed ? '達成済み ✔' : '未達成' }}
+      <!-- クエスト作成ボタン -->
+      <div class="mt-4">
+        <button @click="upsertQuest" class="create-quest-button">
+          {{ quest.id ? 'クエストを更新' : 'クエストを作成' }}
         </button>
       </div>
     </div>
 
-    <!-- クエスト作成ボタン -->
-    <div class="mt-4">
-      <button @click="createQuest" class="create-quest-button">
-        クエストを作成
-      </button>
+    <div v-if="quest.id" class="card-section">
+      <!-- 進捗管理 -->
+      <div class="form-group">
+        <label>進捗管理</label>
+        <p v-if="remainingDays !== null" class="remaining-days">
+          クエスト終了まであと <strong>{{ remainingDays }}</strong> 日
+        </p>
+        <button
+          @click="toggleCompletion"
+          :disabled="isTodayCompleted"
+          class="progress-button"
+          :class="{ completed: isTodayCompleted, disabled: isTodayCompleted }"
+        >
+          {{ isTodayCompleted ? '今日のクエスト達成済み ✔' : '今日のクエストを達成する' }}
+        </button>
+      </div>
     </div>
 
     <!-- 開発者用: リセットボタン -->
-    <div class="mt-4">
+    <div class="mt-4" v-if="quest.id">
       <button @click="resetProgress" class="reset-button">
         🔄 進捗をリセット（開発用）
       </button>
     </div>
 
     <!-- 達成時フィードバック -->
-    <div v-if="quest.completed" class="feedback-card">
+    <div v-if="isTodayCompleted" class="feedback-card">
       <h2 class="feedback-title">🎉 クエスト達成！</h2>
       <p>経験値 +100</p>
       <p>祝福メッセージ: {{ randomMessage }}</p>
@@ -97,137 +100,224 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue';
+import { supabase } from '@/lib/supabase';
 import SeityouView from './SeityouView.vue';
+  const quest = ref({
+  id: null,
+  name: '',
+  duration: '',
+  memo: '',
+  start_date: null,
+  completed_dates: [],
+});
+const user = ref(null);
+const isLoading = ref(true);
 
-export default {
-  name: 'Kuesut',
-  components: { SeityouView },
-  data() {
-    return {
-      isConfirmModalVisible: false,
-      showToast: false,
-      toastMessage: '',
-      quest: {
-        name: '',
-        duration: '',
-        memo: '',
-        completed: false,
-      },
-      selectedTemplateId: '',
-      totalExp: 0,
-      lastCompletionDate: '',
-      randomMessage: '',
-      successMessages: [
-        "よくがんばりました！",
-        "すばらしい努力です！",
-        "継続は力なり！",
-        "あなたは今日も輝いています！",
-        "その調子で続けていこう！",
-        "達成おめでとうございます！"
-      ],
-      templates: [
-        {
-          id: 'template1',
-          name: '朝活クエスト',
-          nameDefault: '朝6時に起きる',
-          duration: 7,
-          memo: '毎朝6時に起きて散歩する',
-        },
-        {
-          id: 'template2',
-          name: '学習クエスト',
-          nameDefault: '毎日30分英語',
-          duration: 7,
-          memo: '英語学習アプリを30分使う',
-        },
-        {
-          id: 'template3',
-          name: 'リフレッシュクエスト',
-          nameDefault: '5分間ストレッチ',
-          duration: 3,
-          memo: '仕事や勉強の合間に体をほぐそう',
-        },
-        {
-          id: 'template4',
-          name: '生活習慣クエスト',
-          nameDefault: '寝る前に日記を書く',
-          duration: 7,
-          memo: '今日の良かったこと、感じたことをひとことでもOK',
-        },
-        {
-          id: 'template5',
-          name: '健康クエスト',
-          nameDefault: '毎日コップ1杯の水を飲む',
-          duration: 5,
-          memo: '起床後や食前など、タイミングを決めてみよう',
-        },
-      ],
-    };
-  },
-  computed: {
-    isToggleDisabled() {
-      const today = this.todayDate();
-      return this.lastCompletionDate === today;
-    },
-  },
-  methods: {
-    applyTemplate() {
-      if (this.selectedTemplateId === 'reset') {
-        this.quest.name = '';
-        this.quest.duration = '';
-        this.quest.memo = '';
-        this.selectedTemplateId = '';
-        return;
-      }
+const isConfirmModalVisible = ref(false);
+const showToast = ref(false);
+const toastMessage = ref('');
+const selectedTemplateId = ref('');
+const totalExp = ref(0); // これは別途永続化が必要
+const randomMessage = ref('');
 
-      const template = this.templates.find(t => t.id === this.selectedTemplateId);
-      if (template) {
-        this.quest.name = template.nameDefault;
-        this.quest.duration = template.duration;
-        this.quest.memo = template.memo;
-      }
-    },
-    toggleCompletion() {
-      if (this.lastCompletionDate === this.todayDate()) {
-        alert('今日はすでに完了しています！');
-        return;
-      }
-      this.isConfirmModalVisible = true;
-    },
-    handleConfirmCompletion(confirmed) {
-      if (confirmed) {
-        this.quest.completed = true;
-        this.lastCompletionDate = this.todayDate();
-        this.totalExp += 100;
+const successMessages = [
+  "よくがんばりました！",
+  "すばらしい努力です！",
+  "継続は力なり！",
+  "あなたは今日も輝いています！",
+  "その調子で続けていこう！",
+  "達成おめでとうございます！"
+];
 
-        // ランダム祝福メッセージ
-        const i = Math.floor(Math.random() * this.successMessages.length);
-        this.randomMessage = this.successMessages[i];
-      }
-      this.isConfirmModalVisible = false;
-    },
-    resetProgress() {
-      this.quest.completed = false;
-      this.totalExp = 0;
-      this.lastCompletionDate = '';
-      alert('進捗がリセットされました');
-    },
-    createQuest() {
-      // ここにクエスト作成ロジック（Supabase連携など）が入りますが、今回はToast表示のみ
-      this.triggerToast('クエストを作成しました！');
-    },
-    todayDate() {
-      return new Date().toISOString().split('T')[0];
-    },
-    triggerToast(message) {
-      this.toastMessage = message;
-      this.showToast = true;
-      setTimeout(() => {
-        this.showToast = false;
-      }, 3000);
-    },
+const templates = [
+  {
+    id: 'template1',
+    name: '朝活クエスト',
+    nameDefault: '朝6時に起きる',
+    duration: 7,
+    memo: '毎朝6時に起きて散歩する',
   },
+  {
+    id: 'template2',
+    name: '学習クエスト',
+    nameDefault: '毎日30分英語',
+    duration: 7,
+    memo: '英語学習アプリを30分使う',
+  },
+  {
+    id: 'template3',
+    name: 'リフレッシュクエスト',
+    nameDefault: '5分間ストレッチ',
+    duration: 3,
+    memo: '仕事や勉強の合間に体をほぐそう',
+  },
+  {
+    id: 'template4',
+    name: '生活習慣クエスト',
+    nameDefault: '寝る前に日記を書く',
+    duration: 7,
+    memo: '今日の良かったこと、感じたことをひとことでもOK',
+  },
+  {
+    id: 'template5',
+    name: '健康クエスト',
+    nameDefault: '毎日コップ1杯の水を飲む',
+    duration: 5,
+    memo: '起床後や食前など、タイミングを決めてみよう',
+  },
+];
+
+const todayDate = () => new Date().toISOString().split('T')[0];
+
+const isTodayCompleted = computed(() => {
+  return quest.value.completed_dates?.includes(todayDate());
+});
+
+const remainingDays = computed(() => {
+  if (!quest.value.start_date || !quest.value.duration) {
+    return null;
+  }
+  const start = new Date(quest.value.start_date);
+  const today = new Date();
+  start.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(start.getTime());
+  endDate.setDate(start.getDate() + quest.value.duration);
+
+  const diffTime = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 0 ? diffDays : 0;
+});
+  const loadQuest = async () => {
+  isLoading.value = true;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    console.error('ユーザーがログインしていません。');
+    isLoading.value = false;
+    return;
+  }
+  user.value = session.user;
+
+  const { data, error } = await supabase
+    .from('quests')
+    .select('*')
+    .eq('user_id', user.value.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116は行がない場合のエラー
+    console.error('クエストの読み込みエラー:', error);
+    triggerToast('クエストの読み込みに失敗しました。');
+  } else if (data) {
+    quest.value = { ...data, completed_dates: data.completed_dates || [] };
+  }
+  isLoading.value = false;
+};
+
+const upsertQuest = async () => {
+  if (!user.value || !quest.value.name || !quest.value.duration) {
+    triggerToast('クエスト名と期間は必須です。');
+    return;
+  }
+
+  const updates = {
+    id: quest.value.id,
+    user_id: user.value.id,
+    name: quest.value.name,
+    duration: quest.value.duration,
+    memo: quest.value.memo,
+    start_date: quest.value.start_date || todayDate(),
+    completed_dates: quest.value.completed_dates || [],
+  };
+
+  // 新規作成の場合、IDをnullにして自動生成させる
+  if (!updates.id) {
+    delete updates.id;
+  }
+
+  const { data, error } = await supabase.from('quests').upsert(updates).select().single();
+
+  if (error) {
+    console.error('クエストの保存エラー:', error);
+    triggerToast(`クエストの保存に失敗しました: ${error.message}`);
+  } else {
+    quest.value = { ...data, completed_dates: data.completed_dates || [] };
+    triggerToast(quest.value.id ? 'クエストを更新しました！' : 'クエストを作成しました！');
+  }
+};
+
+watch(() => quest.value.name, (newName, oldName) => {
+  if (newName !== oldName && oldName !== '') { // oldNameが空でないことを確認
+    quest.value.start_date = todayDate();
+    quest.value.completed_dates = [];
+    triggerToast('クエスト名が変更されたため、進捗がリセットされました。');
+  }
+});
+
+const applyTemplate = () => {
+  if (selectedTemplateId.value === 'reset') {
+    quest.value.name = '';
+    quest.value.duration = '';
+    quest.value.memo = '';
+    selectedTemplateId.value = '';
+    return;
+  }
+
+  const template = templates.find(t => t.id === selectedTemplateId.value);
+  if (template) {
+    quest.value.name = template.nameDefault;
+    quest.value.duration = template.duration;
+    quest.value.memo = template.memo;
+  }
+};
+
+const toggleCompletion = () => {
+  if (isTodayCompleted.value) {
+    alert('今日はすでに完了しています！');
+    return;
+  }
+  isConfirmModalVisible.value = true;
+};
+
+const handleConfirmCompletion = async (confirmed) => {
+  if (confirmed) {
+    const today = todayDate();
+    if (!quest.value.completed_dates.includes(today)) {
+      quest.value.completed_dates.push(today);
+      totalExp.value += 100; // 経験値はローカルで加算
+
+      // ランダム祝福メッセージ
+      const i = Math.floor(Math.random() * successMessages.length);
+      randomMessage.value = successMessages[i];
+
+      await upsertQuest(); // DBを更新
+    }
+  }
+  isConfirmModalVisible.value = false;
+};
+
+const resetProgress = async () => {
+  quest.value.completed_dates = [];
+  quest.value.start_date = todayDate();
+  totalExp.value = 0;
+  await upsertQuest();
+  alert('進捗がリセットされました');
+};
+
+const triggerToast = (message) => {
+  toastMessage.value = message;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+};
+
+onMounted(() => {
+  loadQuest();
+});
 };
 </script>
 
@@ -285,7 +375,7 @@ textarea {
   border: 1px solid #C3D9EE;
   border-radius: 8px;
   box-sizing: border-box;
-  background-color: #E0F2F7;
+  background-color: #FFFFFF;
   color: #333;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
