@@ -111,6 +111,7 @@ import SeityouView from './SeityouView.vue';
   memo: '',
   start_date: null,
   completed_dates: [],
+  total_exp: 0,
 });
 const user = ref(null);
 const isLoading = ref(true);
@@ -119,7 +120,7 @@ const isConfirmModalVisible = ref(false);
 const showToast = ref(false);
 const toastMessage = ref('');
 const selectedTemplateId = ref('');
-const totalExp = ref(0); // これは別途永続化が必要
+const totalExp = computed(() => quest.value.total_exp);
 const randomMessage = ref('');
 
 const successMessages = [
@@ -204,7 +205,7 @@ const remainingDays = computed(() => {
 
   const { data, error } = await supabase
     .from('quests')
-    .select('*')
+    .select('*, total_exp')
     .eq('user_id', user.value.id)
     .single();
 
@@ -212,7 +213,7 @@ const remainingDays = computed(() => {
     console.error('クエストの読み込みエラー:', error);
     triggerToast('クエストの読み込みに失敗しました。');
   } else if (data) {
-    quest.value = { ...data, completed_dates: data.completed_dates || [] };
+    quest.value = { ...data, completed_dates: data.completed_dates || [], total_exp: data.total_exp || 0 };
   }
   isLoading.value = false;
 };
@@ -231,6 +232,7 @@ const upsertQuest = async () => {
     memo: quest.value.memo,
     start_date: quest.value.start_date || todayDate(),
     completed_dates: quest.value.completed_dates || [],
+    total_exp: quest.value.total_exp || 0,
   };
 
   // 新規作成の場合、IDをnullにして自動生成させる
@@ -287,7 +289,7 @@ const handleConfirmCompletion = async (confirmed) => {
     const today = todayDate();
     if (!quest.value.completed_dates.includes(today)) {
       quest.value.completed_dates.push(today);
-      totalExp.value += 100; // 経験値はローカルで加算
+      quest.value.total_exp += 100; // 経験値を加算
 
       // ランダム祝福メッセージ
       const i = Math.floor(Math.random() * successMessages.length);
@@ -302,7 +304,7 @@ const handleConfirmCompletion = async (confirmed) => {
 const resetProgress = async () => {
   quest.value.completed_dates = [];
   quest.value.start_date = todayDate();
-  totalExp.value = 0;
+  quest.value.total_exp = 0;
   await upsertQuest();
   alert('進捗がリセットされました');
 };
