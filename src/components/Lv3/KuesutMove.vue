@@ -318,7 +318,6 @@ const triggerToast = (message) => {
 onMounted(() => {
   loadQuest();
 });
-};
 </script>
 
 <style scoped>
