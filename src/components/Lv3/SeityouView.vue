@@ -9,12 +9,6 @@
 </template>
 
 <script>
-import bud from '@/assets/bug.png';
-import sapling from '@/assets/sapling.png';
-import young from '@/assets/young_tree.png';
-import big from '@/assets/big_tree.png';
-
-
 export default {
   name: 'Seityou',
   props: {
@@ -29,16 +23,15 @@ export default {
     },
     treeImage() {
       const map = {
-        '芽': bud,
-        '苗木': sapling,
-        '若木': young,
-        '大樹': big,
+        '芽': 'https://lszykhbjdgiugznueyqs.supabase.co/storage/v1/object/public/tree-images/bug.png',
+        '苗木': 'https://lszykhbjdgiugznueyqs.supabase.co/storage/v1/object/public/tree-images/sapling.png',
+        '若木': 'https://lszykhbjdgiugznueyqs.supabase.co/storage/v1/object/public/tree-images/young_tree.png',
+        '大樹': 'https://lszykhbjdgiugznueyqs.supabase.co/storage/v1/object/public/tree-images/big_tree.png',
       };
       return map[this.stage];
     },
   }
 };
-
 </script>
 
 
