@@ -6,6 +6,7 @@
     <MoodChart />
     <MoodCalendar3 />
     <NightModeToggle />
+    <UploadAndPreview />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import ActionGacha3 from './ActionGacha3.vue'
 import KuesutMove from './KuesutMove.vue'
 import MoodChart from './MoodChart.vue'
 import MoodCalendar3 from './MoodCalendar3.vue'
+import UploadAndPreview from './UploadAndPreview.vue'
 </script>
 
 <style scoped>
