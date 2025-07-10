@@ -16,7 +16,7 @@
     <div class="section">
       <MoodChart />
       <MoodCalendar />
-      <NightModeToggle />
+      
     </div>
   </div>
 </template>
@@ -33,7 +33,7 @@ import MoodCalendar from '../Lv2/MoodCalendar.vue'
 
 // Lv1から再利用
 import ActionGacha from '../Lv1//ActionGacha.vue'
-import NightModeToggle from '../Lv1/NightModeToggle.vue'
+
 </script>
 
 <style scoped>
