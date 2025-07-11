@@ -3,7 +3,7 @@
     <!-- 既存流用コンポーネント -->
     <div class="section">
       <MoodInput />
-      <ActionGacha />
+      <ActionGacha :level="5" />
     </div>
 
     <!-- Lv5特有の要素 -->
