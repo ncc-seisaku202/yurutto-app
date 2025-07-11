@@ -58,7 +58,20 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
+import { actionsByLevel } from '@/constants/actions.js'
+
+// 親からレベル情報を受け取る
+const props = defineProps({
+  level: {
+    type: Number,
+    required: true,
+    default: 1
+  }
+})
+
+// 現在のレベルに応じた行動リストを取得
+const actionDatabase = computed(() => actionsByLevel[props.level] || [])
 
 // リアクティブデータ
 const isProcessing = ref(false)
@@ -75,38 +88,7 @@ const treasures = reactive([
   { isSelected: false, isOpening: false, isGlowing: false }
 ])
 
-// 行動データベース
-const actionDatabase = [
-  // 運動カテゴリ
-  { name: '5分散歩', category: '運動', description: '外の空気を吸いながら軽く歩いてみましょう', duration: '5分' },
-  { name: 'ストレッチ', category: '運動', description: '肩や首をゆっくりと伸ばしてリフレッシュ', duration: '3分' },
-  { name: '階段昇降', category: '運動', description: '階段を使って軽い運動をしてみましょう', duration: '2分' },
-  { name: 'ラジオ体操', category: '運動', description: '懐かしいラジオ体操で体を動かそう', duration: '6分' },
-  
-  // リラックスカテゴリ
-  { name: '深呼吸', category: 'リラックス', description: 'ゆっくりと深く呼吸して心を落ち着けましょう', duration: '2分' },
-  { name: '瞑想', category: 'リラックス', description: '静かに座って心を空っぽにしてみましょう', duration: '5分' },
-  { name: 'お茶を飲む', category: 'リラックス', description: '温かい飲み物でほっと一息つきましょう', duration: '10分' },
-  { name: '音楽鑑賞', category: 'リラックス', description: '好きな音楽を聴いてリラックスしましょう', duration: '15分' },
-  
-  // 創作活動カテゴリ
-  { name: '絵を描く', category: '創作活動', description: '思いつくままに絵を描いてみましょう', duration: '15分' },
-  { name: '日記を書く', category: '創作活動', description: '今日の出来事や気持ちを書き留めましょう', duration: '10分' },
-  { name: '写真を撮る', category: '創作活動', description: '身の回りの美しいものを写真に収めましょう', duration: '10分' },
-  { name: '料理をする', category: '創作活動', description: '簡単な料理やお菓子作りに挑戦しましょう', duration: '30分' },
-  
-  // 社交カテゴリ
-  { name: '友人に連絡', category: '社交', description: '久しぶりの友人にメッセージを送ってみましょう', duration: '5分' },
-  { name: '家族と話す', category: '社交', description: '家族との時間を大切にしましょう', duration: '15分' },
-  { name: 'SNS投稿', category: '社交', description: '今日の良いことをSNSでシェアしましょう', duration: '5分' },
-  { name: 'オンライン通話', category: '社交', description: '大切な人とビデオ通話をしてみましょう', duration: '20分' },
-  
-  // セルフケアカテゴリ
-  { name: '入浴', category: 'セルフケア', description: 'ゆっくりとお風呂に入ってリフレッシュ', duration: '20分' },
-  { name: '読書', category: 'セルフケア', description: '好きな本を読んで知識や想像力を育みましょう', duration: '30分' },
-  { name: '部屋の整理', category: 'セルフケア', description: '身の回りを整理して気分をスッキリさせましょう', duration: '15分' },
-  { name: '植物の世話', category: 'セルフケア', description: '植物に水をあげて成長を見守りましょう', duration: '5分' }
-]
+
 
 // カテゴリ別の色設定
 const categoryColors = {
@@ -147,8 +129,8 @@ const selectTreasure = (index) => {
     treasures[index].isOpening = true
     
     // ランダムに行動を選択
-    const randomIndex = Math.floor(Math.random() * actionDatabase.length)
-    selectedAction.value = actionDatabase[randomIndex]
+    const randomIndex = Math.floor(Math.random() * actionDatabase.value.length)
+    selectedAction.value = actionDatabase.value[randomIndex]
     
     // 0.5秒後に結果表示
     setTimeout(() => {

@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <MoodInput />
-    <ActionGacha />
+    <ActionGacha :level="3" />
     <KuesutMove />
     <MoodChart />
     <MoodCalendar />
