@@ -1,10 +1,10 @@
 <template>
   <div class="container">
     <MoodInput />
-    <ActionGacha />
+    <ActionGacha :level="1" />
     <MoodChart />
     <MoodCalendar />
-    <NightModeToggle />
+    
   </div>
 </template>
 
@@ -13,7 +13,7 @@ import MoodInput from './MoodInput.vue'
 import ActionGacha from './ActionGacha.vue'
 import MoodChart from './MoodChart.vue'
 import MoodCalendar from './MoodCalendar.vue'
-import NightModeToggle from './NightModeToggle.vue'
+
 </script>
 
 <style scoped>

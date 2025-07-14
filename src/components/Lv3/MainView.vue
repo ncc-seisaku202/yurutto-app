@@ -1,20 +1,20 @@
 <template>
   <div class="container">
-    <MoodInput3 />
-    <ActionGacha3 />
+    <MoodInput />
+    <ActionGacha :level="3" />
     <KuesutMove />
     <MoodChart />
-    <MoodCalendar3 />
-    <NightModeToggle />
+    <MoodCalendar />
   </div>
 </template>
 
 <script setup>
-import MoodInput3 from './MoodInput3.vue'
-import ActionGacha3 from './ActionGacha3.vue'
+import MoodInput from '../Lv2/MoodInput.vue'
+import ActionGacha from '../Lv1/ActionGacha.vue'
 import KuesutMove from './KuesutMove.vue'
-import MoodChart from './MoodChart.vue'
-import MoodCalendar3 from './MoodCalendar3.vue'
+import MoodChart from '../Lv2/MoodChart.vue'
+import MoodCalendar from '../Lv2/MoodCalendar.vue'
+
 </script>
 
 <style scoped>

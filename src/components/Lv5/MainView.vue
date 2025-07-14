@@ -3,24 +3,33 @@
     <!-- 既存流用コンポーネント -->
     <div class="section">
       <MoodInput />
-      <ActionGacha />
+      <ActionGacha :level="5" />
     </div>
 
-    <!-- Lv4特有の要素 -->
+    <!-- Lv5特有の要素 -->
     <div class="section">
-      <h1>ここにLv5の新機能が追加される</h1>
+      <DiscoverValues />
+    </div>
+
+    <!-- 道しるべマップ -->
+    <div class="section">
+      <RoadmapCreator />
     </div>
 
     <!-- 既存流用コンポーネント -->
     <div class="section">
       <MoodChart />
       <MoodCalendar />
-      <NightModeToggle />
+      
     </div>
   </div>
 </template>
 
 <script setup>
+// Lv5特有の要素
+import DiscoverValues from './DiscoverValues.vue'
+import RoadmapCreator from './RoadmapCreator.vue'
+
 // Lv2から再利用
 import MoodInput from '../Lv2/MoodInput.vue'
 import MoodChart from '../Lv2/MoodChart.vue'
@@ -28,7 +37,7 @@ import MoodCalendar from '../Lv2/MoodCalendar.vue'
 
 // Lv1から再利用
 import ActionGacha from '../Lv1//ActionGacha.vue'
-import NightModeToggle from '../Lv1/NightModeToggle.vue'
+
 </script>
 
 <style scoped>
