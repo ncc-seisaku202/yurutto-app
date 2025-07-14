@@ -1,0 +1,9 @@
+fix: ESLintエラーの修正とコード品質の向上
+
+- ESLint v9の互換性問題に対応するため、`package.json`のlintスクリプトを修正。
+- ESLintの対象外とするファイルを`eslint.config.js`に追加。
+- `SeityouView.vue`のコンポーネント名を命名規則に準拠するよう修正。
+- 各コンポーネントで発生していた未使用変数に関するESLintエラーを修正。
+  - `MemoTracker.vue`: 未使用の`formatTime`関数をコメントアウトし、`data`変数の使用方法を修正。
+  - `ReflectionNote.vue`, `DiscoverValues.vue`, `RoadmapCreator.vue`: `triggerToast`関数で`type`引数を活用し、トースト通知のスタイルを動的に変更するよう修正。
+  - `DiscoverValues.vue`: 未使用の`computed`インポートと`showSaveMessage`変数を削除。

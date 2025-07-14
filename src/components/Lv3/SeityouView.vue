@@ -10,7 +10,7 @@
 
 <script>
 export default {
-  name: 'Seityou',
+  name: 'SeityouView',
   props: {
     exp: { type: Number, required: true }
   },
