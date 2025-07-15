@@ -319,8 +319,6 @@ onUnmounted(() => {
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 640px;
-  margin: 2rem auto;
 }
 .section-title {
   font-size: 1.6rem;

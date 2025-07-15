@@ -42,7 +42,7 @@ import ActionGacha from '../Lv1//ActionGacha.vue'
 
 <style scoped>
 .container {
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto;
   padding: 2rem;
   display: flex;
