@@ -276,6 +276,12 @@ const closeModal = () => {
 const triggerToast = (message, type = 'success') => {
   toastMessage.value = message
   showToast.value = true
+  // Add a class based on type for styling
+  const toastElement = document.querySelector('.toast-notification')
+  if (toastElement) {
+    toastElement.classList.remove('success', 'error') // Remove previous types
+    toastElement.classList.add(type)
+  }
   setTimeout(() => {
     showToast.value = false
   }, 3000)

@@ -442,6 +442,16 @@ const setupSubscription = () => {
 const triggerToast = (message, type = 'success') => {
   toastMessage.value = message
   showToast.value = true
+  // Add a class based on type for styling
+  const toastElement = document.querySelector('.toast-notification')
+  if (toastElement) {
+    toastElement.classList.remove('error', 'info') // Remove previous types
+    if (type === 'error') {
+      toastElement.classList.add('error')
+    } else if (type === 'info') {
+      toastElement.classList.add('info')
+    }
+  }
   setTimeout(() => {
     showToast.value = false
   }, 4000)

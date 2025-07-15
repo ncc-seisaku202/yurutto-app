@@ -70,10 +70,10 @@ const recentMemos = ref([])
 const error = ref(null)
 
 // 時刻をフォーマット
-const formatTime = (timestamp) => {
-  const date = new Date(timestamp)
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-}
+// const formatTime = (timestamp) => {
+//   const date = new Date(timestamp)
+//   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+// }
 
 // 日付をフォーマット
 const formatDate = (dateString) => {
@@ -100,7 +100,7 @@ const insertMemo = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("ユーザーが認証されていません。")
 
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('memos')
       .insert([
         { content: currentMemo.value, user_id: user.id }
@@ -131,7 +131,7 @@ const fetchMemos = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return;
 
-    const { data, error: fetchError } = await supabase
+    const { data: fetchedMemos, error: fetchError } = await supabase
       .from('memos')
       .select('*')
       .eq('user_id', user.id)
@@ -140,7 +140,7 @@ const fetchMemos = async () => {
 
     if (fetchError) throw fetchError
 
-    recentMemos.value = data
+    recentMemos.value = fetchedMemos
 
   } catch (e) {
     error.value = `メモの読み込みに失敗しました: ${e.message}`
