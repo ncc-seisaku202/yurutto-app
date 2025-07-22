@@ -20,7 +20,7 @@
       <!-- クエスト作成フォーム -->
       <div class="form-group">
         <label for="quest-name">クエスト名</label>
-        <input id="quest-name" v-model="quest.name" placeholder="例: 毎日早起きチャレンジ" :disabled="quest.id && !isEditing" />
+        <input id="quest-name" ref="questNameInput" v-model="quest.name" placeholder="例: 毎日早起きチャレンジ" :disabled="quest.id && !isEditing" />
       </div>
       <div class="form-group">
         <label for="quest-duration">期間</label>
@@ -62,11 +62,19 @@
         </p>
         <button
           @click="toggleCompletion"
-          :disabled="isTodayCompleted"
+          :disabled="isTodayCompleted || remainingDays === 0"
           class="progress-button"
-          :class="{ completed: isTodayCompleted, disabled: isTodayCompleted }"
+          :class="{ completed: isTodayCompleted, disabled: isTodayCompleted || remainingDays === 0 }"
         >
           {{ isTodayCompleted ? '今日のクエスト達成済み ✔' : '今日のクエストを達成する' }}
+        </button>
+      </div>
+
+      <div v-if="remainingDays === 0" class="quest-end-section">
+        <h2 class="quest-end-title">クエスト期間終了！</h2>
+        <p class="quest-end-message">このクエストは終了しました。新しいクエストを作成しましょう！</p>
+        <button @click="startNewQuest" class="new-quest-button">
+          新しいクエストを作成する
         </button>
       </div>
     </div>
@@ -112,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { supabase } from '@/lib/supabase';
 import SeityouView from './SeityouView.vue';
 
@@ -323,6 +331,29 @@ const handleConfirmCompletion = async (confirmed) => {
   }
 };
 
+const questNameInput = ref(null);
+
+const startNewQuest = () => {
+  quest.value = {
+    id: null,
+    name: '',
+    duration: '',
+    memo: '',
+    start_date: null,
+    completed_dates: [],
+  };
+  originalQuest.value = null;
+  isEditing.value = false;
+  selectedTemplateId.value = '';
+  triggerToast('新しいクエストを作成してください！');
+  // クエスト名入力欄にフォーカス
+  nextTick(() => {
+    if (questNameInput.value) {
+      questNameInput.value.focus();
+    }
+  });
+};
+
 const resetProgress = async () => {
   const { error: profileUpdateError } = await supabase.from('profiles').update({ total_exp: 0 }).eq('id', user.value.id);
   if (profileUpdateError) {
@@ -386,4 +417,40 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #A0C4E2
 .toast-notification { position: fixed; top: 20px; right: 20px; background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
 .fade-enter, .fade-leave-to { opacity: 0; }
+
+.quest-end-section {
+  background-color: #FFF3E0;
+  border: 2px solid #FFCC80;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #E65100;
+}
+
+.quest-end-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.quest-end-message {
+  margin-bottom: 1rem;
+}
+
+.new-quest-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  background-color: #2196F3; /* Blue color */
+  transition: background-color 0.3s;
+}
+
+.new-quest-button:hover {
+  background-color: #1976D2;
+}
 </style>

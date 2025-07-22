@@ -7,6 +7,7 @@ import { defineConfig } from "eslint/config";
 
 
 export default defineConfig([
+  { ignores: [".vscode/**", "jsconfig.json", "package.json", "package-lock.json"] },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,vue}"], plugins: { js }, extends: ["js/recommended"] },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts,vue}"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,

@@ -442,6 +442,16 @@ const setupSubscription = () => {
 const triggerToast = (message, type = 'success') => {
   toastMessage.value = message
   showToast.value = true
+  // Add a class based on type for styling
+  const toastElement = document.querySelector('.toast-notification')
+  if (toastElement) {
+    toastElement.classList.remove('error', 'info') // Remove previous types
+    if (type === 'error') {
+      toastElement.classList.add('error')
+    } else if (type === 'info') {
+      toastElement.classList.add('info')
+    }
+  }
   setTimeout(() => {
     showToast.value = false
   }, 4000)
@@ -474,8 +484,7 @@ onUnmounted(() => {
   border-radius: 16px;
   padding: 2.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
 }

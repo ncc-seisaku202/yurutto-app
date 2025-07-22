@@ -145,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 // -- Data Refs --
@@ -156,7 +156,7 @@ const savedAt = ref(null) // DBからはupdated_atを利用
 
 // -- UI State Refs --
 const loading = ref(true)
-const showSaveMessage = ref(false) // これはトースト通知に置き換える
+
 const isEditMode = ref(false)
 const toastMessage = ref('')
 const showToast = ref(false)
@@ -260,6 +260,14 @@ const saveValues = async () => {
 const triggerToast = (message, type = 'success') => {
   toastMessage.value = message
   showToast.value = true
+  // Add a class based on type for styling
+  const toastElement = document.querySelector('.toast-notification')
+  if (toastElement) {
+    toastElement.classList.remove('error') // Remove previous error class
+    if (type === 'error') {
+      toastElement.classList.add('error')
+    }
+  }
   setTimeout(() => {
     showToast.value = false
   }, 3000)
@@ -353,8 +361,7 @@ onMounted(async () => {
   border-radius: 16px;
   padding: 2.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 100%;
   position: relative;
   overflow: hidden;
 }

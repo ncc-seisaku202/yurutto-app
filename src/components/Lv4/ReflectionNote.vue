@@ -276,6 +276,12 @@ const closeModal = () => {
 const triggerToast = (message, type = 'success') => {
   toastMessage.value = message
   showToast.value = true
+  // Add a class based on type for styling
+  const toastElement = document.querySelector('.toast-notification')
+  if (toastElement) {
+    toastElement.classList.remove('success', 'error') // Remove previous types
+    toastElement.classList.add(type)
+  }
   setTimeout(() => {
     showToast.value = false
   }, 3000)
@@ -319,8 +325,6 @@ onUnmounted(() => {
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 640px;
-  margin: 2rem auto;
 }
 .section-title {
   font-size: 1.6rem;

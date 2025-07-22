@@ -735,5 +735,95 @@ select {
   font-weight: bold;
   transition: opacity 0.3s ease;
 }
+
+/* --- Responsive Design --- */
+
+/* タブレット向け */
+@media (max-width: 768px) {
+  .my-plan {
+    padding: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  .goal-input-group,
+  .duration-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .goal-input-group input,
+  .duration-input-group select {
+    width: 100%;
+  }
+
+  .step-input {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step-input input {
+    width: 100%;
+  }
+
+  .step-input button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+  }
+
+  .modal-content {
+    width: 85%;
+    padding: 1.5rem;
+  }
+}
+
+/* スマートフォン向け */
+@media (max-width: 480px) {
+  .my-plan {
+    padding: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+  }
+
+  .card-section {
+    padding: 1rem;
+  }
+
+  .step-card {
+    padding: 0.75rem;
+  }
+
+  .step-card-inner {
+    padding-right: 2.5rem; /* チェックボックスとの間隔を確保 */
+  }
+
+  .step-checkbox {
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .modal-content {
+    width: 90%;
+    padding: 1.2rem;
+  }
+
+  .modal-content h3 {
+    font-size: 1.1rem;
+  }
+
+  .toast-notification {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    text-align: center;
+  }
+}
 </style>
 
