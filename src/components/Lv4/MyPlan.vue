@@ -514,6 +514,7 @@ select {
   padding: 0.6rem 0.8rem;
   font-size: 1rem;
   color: #333;
+  box-sizing: border-box;
 }
 
 .step-section {
@@ -753,10 +754,13 @@ select {
     flex-direction: column;
     align-items: stretch;
     gap: 0.75rem;
+    flex-wrap: wrap;
   }
 
   .goal-input-group input,
-  .duration-input-group select {
+  .goal-input-group button,
+  .duration-input-group select,
+  .duration-input-group button {
     width: 100%;
   }
 
@@ -815,6 +819,12 @@ select {
 
   .modal-content h3 {
     font-size: 1.1rem;
+  }
+
+  .goal-input-group button,
+  .duration-input-group button {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
   }
 
   .toast-notification {

@@ -324,7 +324,6 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  width: 100%;
 }
 .section-title {
   font-size: 1.6rem;
@@ -368,7 +367,7 @@ input[type='radio'] { display: none; } /* Hide original radio button */
 .options.horizontal label.checked { background-color: #d4eaff; border-color: #007bff; }
 
 .textarea-wrapper { max-width: 100%; margin: 0 auto; }
-textarea { width: 100%; min-height: 100px; padding: 0.8rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; resize: vertical; }
+textarea { width: 100%; min-height: 100px; padding: 0.8rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; resize: vertical; box-sizing: border-box; }
 
 .button-wrapper { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
 button { padding: 0.7rem 1.5rem; font-size: 1rem; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
@@ -404,4 +403,15 @@ button.danger { background-color: #dc3545; }
 .toast-notification {
   position: fixed; top: 20px; right: 20px; background-color: #28a745; color: white; padding: 0.8rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 2000; font-weight: bold;}
 .toast-notification.error { background-color: #dc3545; }
+
+@media (max-width: 480px) {
+  .reflection-note {
+    padding: 1rem;
+  }
+
+  .options.horizontal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 </style>
